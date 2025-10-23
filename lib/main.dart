@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:srumec_app/screens/main_screen.dart';
+import 'package:srumec_app/screens/login_screen.dart';
 
 void main() {
   runApp(const SrumecApp());
@@ -17,7 +17,7 @@ class SrumecApp extends StatelessWidget {
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       // Místo původního obsahu zde použijeme náš MainScreen
-      home: const MainScreen(),
+      home: const LoginScreen(),
       debugShowCheckedModeBanner: false, // Vypne otravný banner "Debug"
     );
   }
