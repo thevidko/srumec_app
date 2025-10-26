@@ -39,6 +39,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.2.1
   flutter_secure_storage: ^9.0.0
+  flutter_map_marker_popup: ^6.1.2
 
 dev_dependencies:
   flutter_test:

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:srumec_app/screens/chat_screen.dart';
 import 'package:srumec_app/screens/events_screen.dart';
-import 'package:srumec_app/screens/map_screen.dart';
+import 'package:srumec_app/screens/map/map_screen.dart';
+import 'package:srumec_app/controller/map_view_controller.dart';
 import 'package:srumec_app/screens/my_events_screen.dart';
-import 'package:srumec_app/screens/profile_screen.dart'; // Import nového screenu
-import 'package:srumec_app/screens/settings_screen.dart';
+import 'package:srumec_app/screens/profile_screen.dart';
+import 'package:srumec_app/models/event.dart';
+import 'package:srumec_app/data/mock_points.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -13,83 +16,74 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = -1; // -1 bude znamenat, že je vybraná mapa (FAB)
+  int _selectedIndex = -1; // -1 = mapa
+  final MapViewController _mapController = MapViewController();
 
-  // Seznam obrazovek pro BottomAppBar, mapa zde už není
-  static const List<Widget> _widgetOptions = <Widget>[
-    EventsScreen(),
-    MyEventsScreen(),
-    SettingsScreen(),
-    ProfileScreen(), // Přidání nového screenu
+  // obrazovky bez mapy
+  late final List<Widget> _widgetOptions = <Widget>[
+    EventsScreen(
+      events: mockPoints,
+      onShowOnMap: _handleShowOnMap, // ⬅️ přepne na mapu + ukáže popup
+    ),
+    const MyEventsScreen(),
+    const ChatScreen(),
+    const ProfileScreen(),
   ];
 
-  // Metoda pro změnu obrazovky
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
+  void _handleShowOnMap(Event e) {
+    setState(() => _selectedIndex = -1); // přepnout na mapu
+    // počkej až se přerenderuje body -> potom pošli příkaz mapě
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _mapController.showEvent(e);
     });
   }
 
+  void _onItemTapped(int index) => setState(() => _selectedIndex = index);
+
   @override
   Widget build(BuildContext context) {
+    final isMap = _selectedIndex == -1;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          _selectedIndex == -1
-              ? 'Mapa'
-              : [
+      appBar: isMap
+          ? null
+          : AppBar(
+              title: Text(
+                [
                   'Akce v okolí',
                   'Moje akce',
-                  'Nastavení',
+                  'Chat',
                   'Profil',
                 ][_selectedIndex],
-        ),
-      ),
-
-      // Tělo se dynamicky mění podle toho, co je vybráno
-      body: _selectedIndex == -1
-          ? const MapScreen()
+              ),
+            ),
+      body: isMap
+          ? SafeArea(top: true, bottom: false, child: MapScreen(controller: _mapController))
           : _widgetOptions[_selectedIndex],
-
-      // Plovoucí tlačítko (FAB)
+      extendBody: true,
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _onItemTapped(-1), // Při kliknutí se zobrazí mapa
-        backgroundColor: _selectedIndex == -1
-            ? Colors.amber[700]
-            : Colors.blueAccent,
+        onPressed: () => _onItemTapped(-1),
+        backgroundColor: isMap ? Colors.amber[700] : Colors.blueAccent,
         child: const Icon(Icons.map_outlined, color: Colors.white),
-        elevation: 2.0,
       ),
-      // Umístění FAB doprostřed a "přikotvení" k BottomAppBar
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-
-      // Spodní lišta
       bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(), // Tvar s "výřezem"
-        notchMargin: 8.0, // Mezera mezi FAB a lištou
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8.0,
         child: Row(
-          // Rozmístění ikon v liště
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: <Widget>[
-            // Tlačítka vlevo
             _buildNavIcon(icon: Icons.list_alt, index: 0, label: 'Akce'),
             _buildNavIcon(icon: Icons.person, index: 1, label: 'Moje akce'),
-            // Mezera uprostřed pro FAB
             const SizedBox(width: 40),
-            // Tlačítka vpravo
-            _buildNavIcon(icon: Icons.settings, index: 2, label: 'Nastavení'),
-            _buildNavIcon(
-              icon: Icons.account_circle,
-              index: 3,
-              label: 'Profil',
-            ),
+            _buildNavIcon(icon: Icons.chat_bubble_outline, index: 2, label: 'Chat'),
+            _buildNavIcon(icon: Icons.account_circle, index: 3, label: 'Profil'),
           ],
         ),
       ),
     );
   }
 
-  // Pomocná metoda pro vytvoření ikon v liště, aby se neopakoval kód
   Widget _buildNavIcon({
     required IconData icon,
     required int index,

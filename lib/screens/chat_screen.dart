@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class MyEventsScreen extends StatelessWidget {
-  const MyEventsScreen({super.key});
+class ChatScreen extends StatelessWidget {
+  const ChatScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -10,26 +10,26 @@ class MyEventsScreen extends StatelessWidget {
       bottom: true,
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.event_available, size: 48, color: Colors.blueGrey),
+              const Icon(Icons.chat_bubble_outline, size: 48),
               const SizedBox(height: 12),
               const Text(
-                'Zde budou moje vytvořené akce',
+                'Zde bude chat',
                 style: TextStyle(fontSize: 24),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 20),
-              FilledButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text('Vytvořit novou událost'),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Tvorba nové události – brzy.')),
+                    const SnackBar(content: Text('Chat – zatím placeholder 🙂')),
                   );
                 },
+                icon: const Icon(Icons.send),
+                label: const Text('Poslat zprávu (mock)'),
               ),
             ],
           ),
