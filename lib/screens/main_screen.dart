@@ -1,13 +1,12 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:srumec_app/screens/chat_screen.dart';
-import 'package:srumec_app/screens/events_screen.dart';
-import 'package:srumec_app/screens/map/map_screen.dart';
 import 'package:srumec_app/controller/map_view_controller.dart';
-import 'package:srumec_app/screens/my_events_screen.dart';
-import 'package:srumec_app/screens/profile_screen.dart';
+import 'package:srumec_app/events/screens/events_screen.dart';
+import 'package:srumec_app/events/screens/my_events_screen.dart';
+import 'package:srumec_app/events/services/events_service.dart';
 import 'package:srumec_app/models/event.dart';
-import 'package:srumec_app/data/mock_points.dart';
+import 'package:srumec_app/screens/chat_screen.dart';
+import 'package:srumec_app/screens/map/map_screen.dart';
+import 'package:srumec_app/screens/profile_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -19,58 +18,44 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = -1; // -1 = mapa
   final MapViewController _mapController = MapViewController();
+  final EventsService _eventsService = EventsService();
+  List<Event> _events = [];
+  bool _isLoadingEvents = false;
+  String? _eventsError;
 
-  // obrazovky bez mapy
-  late final List<Widget> _widgetOptions = <Widget>[
-    EventsScreen(
-      events: mockPoints,
-      onShowOnMap: _handleShowOnMap, // ⬅️ přepne na mapu + ukáže popup
-    ),
-    const MyEventsScreen(),
-    const ChatScreen(),
-    const ProfileScreen(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadEvents();
+  }
 
-  Future<void> _testApi() async {
-    final dio = Dio();
-
-    const url = 'http://10.0.2.2:4000/v1/events/get-nearby';
-
-    final body = {"latitude": 50.087, "longitude": 14.42, "radius_m": 5000};
+  Future<void> _loadEvents() async {
+    setState(() {
+      _isLoadingEvents = true;
+      _eventsError = null;
+    });
 
     try {
-      final response = await dio.post(url, data: body);
-
-      if (!mounted) return;
-
-      // Výpis úspěchu
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Úspěch! Načteno akcí: ${(response.data as List).length}',
-          ),
-          backgroundColor: Colors.green,
-        ),
+      final events = await _eventsService.fetchNearby(
+        lat: 50.087,
+        lng: 14.42,
+        radius: 5000,
       );
 
-      print("ODPOVĚĎ SERVERU: ${response.data}");
-    } on DioException catch (e) {
       if (!mounted) return;
-
-      String errorMsg = e.message ?? 'Neznámá chyba';
-      if (e.response != null) {
-        errorMsg +=
-            " (Server: ${e.response?.statusCode} - ${e.response?.data})";
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Chyba: $errorMsg'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 5),
-        ),
-      );
-      print("CHYBA: $e");
+      setState(() {
+        _events = events;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _eventsError = 'Nepodařilo se načíst akce.';
+      });
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingEvents = false;
+      });
     }
   }
 
@@ -95,23 +80,25 @@ class _MainScreenState extends State<MainScreen> {
               title: Text(
                 ['Akce v okolí', 'Moje akce', 'Chat', 'Profil'][_selectedIndex],
               ),
-              // --- 3. PŘIDAT TLAČÍTKO DO APPBARU ---
               actions: [
-                IconButton(
-                  icon: const Icon(Icons.wifi_tethering), // Ikonka vysílače
-                  tooltip: 'Test API',
-                  onPressed: _testApi, // Volání naší metody
-                ),
+                if (_selectedIndex == 0)
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    tooltip: 'Načíst akce',
+                    onPressed: _isLoadingEvents ? null : _loadEvents,
+                  ),
               ],
-              // -------------------------------------
             ),
       body: isMap
           ? SafeArea(
               top: true,
               bottom: false,
-              child: MapScreen(controller: _mapController),
+              child: MapScreen(
+                controller: _mapController,
+                events: _events,
+              ),
             )
-          : _widgetOptions[_selectedIndex],
+          : _buildSectionBody(),
       extendBody: true,
       floatingActionButton: FloatingActionButton(
         onPressed: () => _onItemTapped(-1),
@@ -140,6 +127,58 @@ class _MainScreenState extends State<MainScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionBody() {
+    switch (_selectedIndex) {
+      case 0:
+        return _buildEventsTab();
+      case 1:
+        return const MyEventsScreen();
+      case 2:
+        return const ChatScreen();
+      case 3:
+        return const ProfileScreen();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildEventsTab() {
+    if (_isLoadingEvents && _events.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_eventsError != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _eventsError!,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: _loadEvents,
+              child: const Text('Zkusit znovu'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_events.isEmpty) {
+      return const Center(child: Text('Žádné akce k zobrazení.'));
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadEvents,
+      child: EventsScreen(
+        events: _events,
+        onShowOnMap: _handleShowOnMap,
       ),
     );
   }

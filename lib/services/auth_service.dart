@@ -4,24 +4,24 @@ import 'package:srumec_app/config/app_config.dart';
 
 class AuthService {
   Future<String?> login(String email, String password) async {
-    final url = Uri.parse('${AppConfig.authBaseUrl}/login');
-
+    final url = Uri.parse('${AppConfig.authBaseUrl}/auth/login');
+    print(url);
     try {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json; charset=UTF-8'},
         body: jsonEncode({'email': email, 'password': password}),
       );
-
+      print(response);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return data['access_token'];
       } else {
-        // Zde můžete logovat chybu, např. print(response.body);
+        print(response.body);
         return null;
       }
     } catch (e) {
-      // Zde můžete logovat chybu připojení, např. print(e.toString());
+      print(e.toString());
       return null;
     }
   }
