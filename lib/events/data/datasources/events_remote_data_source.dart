@@ -1,22 +1,40 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart'; // pro debugPrint
+import 'package:srumec_app/core/services/storage_service.dart';
 import 'package:srumec_app/models/event.dart';
 import '../../../../core/network/api_endpoints.dart';
 
 class EventsRemoteDataSource {
   final Dio dio;
+  final StorageService _storageService = StorageService(); // Instance storage
 
   EventsRemoteDataSource(this.dio);
 
-  // Metoda nyní přijímá parametry
   Future<List<Event>> getNearbyEvents({
     required double latitude,
     required double longitude,
     required int radius,
   }) async {
-    // 1. URL adresa
     final url = '${ApiEndpoints.eventsBaseUrl}${Events.getAll}';
 
-    // 2. Příprava JSON těla (Body)
+    // 1. Načtení tokenu z bezpečného úložiště
+    final token = await _storageService.readToken();
+
+    if (token == null) {
+      // Pokud nemáme token, uživatel není přihlášen.
+      // Zde můžete vyhodit výjimku, která přesměruje na LoginScreen.
+      debugPrint('Chyba: Žádný token. Uživatel není přihlášen.');
+      throw Exception('User not authenticated');
+    }
+
+    // 2. Příprava hlaviček s tokenem
+    final options = Options(
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token', // <--- Tady se vloží token
+      },
+    );
+
     final body = {
       "latitude": latitude,
       "longitude": longitude,
@@ -24,17 +42,19 @@ class EventsRemoteDataSource {
     };
 
     try {
-      // 3. Změna na POST a odeslání dat
-      final response = await dio.post(url, data: body);
+      debugPrint('Volám API: $url s tokenem: ${token.substring(0, 10)}...');
 
-      // Předpokládám, že backend vrací seznam v klíči 'data' nebo přímo seznam
-      // Pokud backend vrací přímo List:
+      final response = await dio.post(
+        url,
+        data: body,
+        options: options, // <--- Nezapomenout přidat options
+      );
+
       final List<dynamic> data = response.data;
-
       return data.map((json) => Event.fromJson(json)).toList();
-    } catch (e) {
-      // Pro ladění vypíšeme chybu
-      print("Chyba API: $e");
+    } on DioException catch (e) {
+      debugPrint("Dio Error: ${e.response?.statusCode}");
+      // Pokud je chyba 401, možná vypršel token -> odhlásit uživatele?
       rethrow;
     }
   }

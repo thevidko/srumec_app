@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:srumec_app/config/app_config.dart';
+import 'package:srumec_app/core/network/api_endpoints.dart';
 
 class AuthService {
   Future<String?> login(String email, String password) async {
-    final url = Uri.parse('${AppConfig.authBaseUrl}/auth/login');
+    final url = Uri.parse('${ApiEndpoints.baseUrl}${Auth.login}');
     print(url);
     try {
       final response = await http.post(

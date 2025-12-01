@@ -41,7 +41,7 @@ class _MainScreenState extends State<MainScreen> {
         lng: 14.42,
         radius: 5000,
       );
-
+      debugPrint('Staženo akcí: ${events.length}');
       if (!mounted) return;
       setState(() {
         _events = events;
@@ -93,10 +93,7 @@ class _MainScreenState extends State<MainScreen> {
           ? SafeArea(
               top: true,
               bottom: false,
-              child: MapScreen(
-                controller: _mapController,
-                events: _events,
-              ),
+              child: MapScreen(controller: _mapController, events: _events),
             )
           : _buildSectionBody(),
       extendBody: true,
@@ -156,10 +153,7 @@ class _MainScreenState extends State<MainScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              _eventsError!,
-              textAlign: TextAlign.center,
-            ),
+            Text(_eventsError!, textAlign: TextAlign.center),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _loadEvents,
@@ -176,10 +170,7 @@ class _MainScreenState extends State<MainScreen> {
 
     return RefreshIndicator(
       onRefresh: _loadEvents,
-      child: EventsScreen(
-        events: _events,
-        onShowOnMap: _handleShowOnMap,
-      ),
+      child: EventsScreen(events: _events, onShowOnMap: _handleShowOnMap),
     );
   }
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:srumec_app/screens/main_screen.dart';
-import 'package:srumec_app/services/auth_service.dart';
-import 'package:srumec_app/services/storage_service.dart';
+import 'package:srumec_app/auth/services/auth_service.dart';
+import 'package:srumec_app/core/services/storage_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

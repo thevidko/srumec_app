@@ -3,15 +3,15 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_popup/flutter_map_marker_popup.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:srumec_app/controller/map_view_controller.dart';
+import 'package:srumec_app/models/event.dart';
 
-import '../../data/mock_points.dart';
-import '../../models/event.dart';
-import 'widgets/map_markers.dart';
 import 'widgets/event_popup_bubble.dart';
+import 'widgets/map_markers.dart';
 
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key, required this.controller});
+  const MapScreen({super.key, required this.controller, required this.events});
   final MapViewController controller;
+  final List<Event> events;
   @override
   State<MapScreen> createState() => _MapScreenState();
 }
@@ -19,9 +19,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   final MapController _mapController = MapController();
   final PopupController _popupController = PopupController();
-
-  late final List<Marker> _markers =
-      buildEventMarkers(mockPoints, (e) => _lockOn(e)); // při tapu na marker rovnou lock
+  late List<Marker> _markers;
 
   Event? _selected;
   bool _isLocked = false; // ⬅️ když je popup otevřený a mapa je “zamčená”
@@ -30,6 +28,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     widget.controller.attach(_lockOn); // ⬅️ registrace callbacku z controlleru
+    _markers = buildEventMarkers(widget.events, (e) => _lockOn(e));
   }
 
   @override
@@ -38,12 +37,34 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     if (oldWidget.controller != widget.controller) {
       widget.controller.attach(_lockOn);
     }
+    if (oldWidget.events != widget.events) {
+      _buildMarkers();
+    }
   }
 
+  void _buildMarkers() {
+    debugPrint("Překresluji markery. Počet akcí: ${widget.events.length}");
 
-  Future<void> animateMapMove(LatLng dest, double destZoom,
-      {Duration duration = const Duration(milliseconds: 500),
-       Curve curve = Curves.easeInOut}) async {
+    // Pro debug vypište souřadnice první akce
+    if (widget.events.isNotEmpty) {
+      debugPrint(
+        "První akce je na: ${widget.events.first.lat}, ${widget.events.first.lng}",
+      );
+    }
+
+    setState(() {
+      _markers = buildEventMarkers(widget.events, (e) => _lockOn(e));
+    });
+
+    debugPrint("Vytvořeno markerů: ${_markers.length}");
+  }
+
+  Future<void> animateMapMove(
+    LatLng dest,
+    double destZoom, {
+    Duration duration = const Duration(milliseconds: 500),
+    Curve curve = Curves.easeInOut,
+  }) async {
     final start = _mapController.camera.center;
     final startZoom = _mapController.camera.zoom;
 
@@ -64,7 +85,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     controller.dispose();
   }
 
-    Future<void> _lockOn(Event e) async {
+  Future<void> _lockOn(Event e) async {
     setState(() {
       _selected = e;
       _isLocked = true;
@@ -93,11 +114,11 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     });
   }
 
-
   void _goToDetail(Event e) {
     // Navigator.pushNamed(context, '/eventDetail', arguments: e);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('Detail: ${e.title}')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Detail: ${e.title}')));
   }
 
   Marker? _findMarkerForEvent(Event e) {
@@ -112,7 +133,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   Event? _findEventForMarker(Marker m) {
     try {
-      return mockPoints.firstWhere(
+      return widget.events.firstWhere(
         (e) => e.lat == m.point.latitude && e.lng == m.point.longitude,
       );
     } catch (_) {
@@ -120,8 +141,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     }
   }
 
-
-    @override
+  @override
   Widget build(BuildContext context) {
     // flutter_map 6.x
     final flagsWhenLocked = InteractiveFlag.none;
@@ -132,7 +152,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         FlutterMap(
           mapController: _mapController,
           options: MapOptions(
-            initialCenter: const LatLng(50.2092, 15.8328),
+            initialCenter: const LatLng(50.0755, 14.4378),
             initialZoom: 13.5,
             interactionOptions: InteractionOptions(
               flags: _isLocked ? flagsWhenLocked : flagsWhenFree,
@@ -160,9 +180,10 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                     return EventPopupBubble(
                       title: e.title,
                       subtitle: e.description,
-                      onDetail: () => ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Detail: ${e.title}')),
-                      ),
+                      onDetail: () =>
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Detail: ${e.title}')),
+                          ),
                       onClose: _unlock,
                     );
                   },
@@ -185,4 +206,3 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     );
   }
 }
-

@@ -1,12 +1,13 @@
 class ApiEndpoints {
   //IP
   static String get _host {
-    return 'http://127.0.0.1';
+    return 'http://10.0.2.2';
   }
 
   //URL maker pro services
-  static String get eventsBaseUrl => '$_host:4000';
-  static String get chatsBaseUrl => '$_host:4001';
+  static String get eventsBaseUrl => '$_host:8000';
+  static String get chatsBaseUrl => '$_host:8000';
+  static String get baseUrl => '$_host:8000';
 }
 
 // Events - ENDPOINTS
@@ -16,4 +17,8 @@ class Events {
   static const String create = '/v1/events/create-one';
   static const String delete = '/v1/events/delete-one';
   static const String update = '/v1/events/delete-one';
+}
+
+class Auth {
+  static const String login = '/auth/login';
 }
