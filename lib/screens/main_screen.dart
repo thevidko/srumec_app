@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:srumec_app/controller/map_view_controller.dart';
 import 'package:srumec_app/core/providers/locator/location_provider.dart';
+import 'package:srumec_app/events/data/repositories/event_repository.dart';
 import 'package:srumec_app/events/screens/events_screen.dart';
 import 'package:srumec_app/events/screens/my_events_screen.dart';
 import 'package:srumec_app/events/services/events_service.dart';
@@ -28,8 +29,10 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
-    _initLocationAndEvents();
-    //_loadEvents();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initLocationAndEvents();
+    });
   }
 
   // FETCH LOKACE
@@ -61,7 +64,7 @@ class _MainScreenState extends State<MainScreen> {
     });
 
     try {
-      final events = await _eventsService.fetchNearby(
+      final events = await context.read<EventsRepository>().getNearbyEvents(
         lat: lat,
         lng: lng,
         radius: 5000,

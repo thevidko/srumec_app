@@ -205,7 +205,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           children: [
             TileLayer(
               urlTemplate:
-                  'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
+                  'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png',
               subdomains: const ['a', 'b', 'c'],
               userAgentPackageName: 'com.example.srumec_app',
             ),

@@ -5,9 +5,7 @@ import 'package:srumec_app/models/event.dart';
 
 class EventsService {
   EventsService({Dio? dio})
-      : _repository = EventsRepository(
-          EventsRemoteDataSource(dio ?? Dio()),
-        );
+    : _repository = EventsRepository(EventsRemoteDataSource(dio ?? Dio()));
 
   final EventsRepository _repository;
 
@@ -16,10 +14,6 @@ class EventsService {
     required double lng,
     int radius = 5000,
   }) {
-    return _repository.getNearbyEvents(
-      lat: lat,
-      lng: lng,
-      radius: radius,
-    );
+    return _repository.getNearbyEvents(lat: lat, lng: lng, radius: radius);
   }
 }

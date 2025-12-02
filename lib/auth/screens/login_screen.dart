@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:srumec_app/screens/main_screen.dart';
+import 'package:provider/provider.dart'; // <--- NUTNÉ
+import 'package:srumec_app/auth/providers/auth_provider.dart'; // Import Providera
 import 'package:srumec_app/auth/services/auth_service.dart';
-import 'package:srumec_app/core/services/storage_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,22 +11,18 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Klíč pro validaci formuláře
   final _formKey = GlobalKey<FormState>();
-
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  // StorageService zde už nepotřebujeme, řeší to Provider
   final _authService = AuthService();
-  final _storageService = StorageService();
 
   bool _isLoading = false;
   String? _errorMessage;
 
   Future<void> _login() async {
-    // Zvalidujeme formulář
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
@@ -34,28 +30,31 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
+      // 1. Získáme token ze serveru (vrací String?)
       final token = await _authService.login(
         _emailController.text,
         _passwordController.text,
       );
 
       if (token != null) {
-        await _storageService.saveToken(token);
-        // Po úspěšném přihlášení přejdeme na hlavní obrazovku
-        // 'mounted' kontroluje, zda je widget stále aktivní
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const MainScreen()),
-          );
-        }
+        if (!mounted) return;
+
+        // 2. DŮLEŽITÉ: Předáme token do AuthProvidera
+        // listen: false, protože uvnitř funkce nechceme překreslovat tento widget
+        await context.read<AuthProvider>().login(token);
+
+        // 3. ODSTRANĚNO: Navigator.pushReplacement(...)
+        // Nikam nenavigujeme ručně!
+        // AuthProvider změní stav -> AuthWrapper v main.dart to uvidí -> přepne na MainScreen sám.
       } else {
         setState(() {
-          _errorMessage = 'Nesprávný email nebo heslo.';
+          _errorMessage = 'Nesprávný email nebo heslo (token je null).';
         });
       }
     } catch (e) {
+      debugPrint("Login error: $e");
       setState(() {
-        _errorMessage = 'Nastala chyba. Zkuste to prosím znovu.';
+        _errorMessage = 'Chyba přihlášení: $e';
       });
     } finally {
       if (mounted) {
