@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:srumec_app/auth/screens/login_screen.dart';
+import 'package:srumec_app/core/providers/locator/location_provider.dart';
 
 void main() {
-  runApp(const SrumecApp());
+  runApp(
+    MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => LocationProvider())],
+      child: const SrumecApp(),
+    ),
+  );
 }
 
 class SrumecApp extends StatelessWidget {

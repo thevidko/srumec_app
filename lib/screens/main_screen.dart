@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:srumec_app/controller/map_view_controller.dart';
+import 'package:srumec_app/core/providers/locator/location_provider.dart';
 import 'package:srumec_app/events/screens/events_screen.dart';
 import 'package:srumec_app/events/screens/my_events_screen.dart';
 import 'package:srumec_app/events/services/events_service.dart';
@@ -26,10 +28,33 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
-    _loadEvents();
+    _initLocationAndEvents();
+    //_loadEvents();
   }
 
-  Future<void> _loadEvents() async {
+  // FETCH LOKACE
+  Future<void> _initLocationAndEvents() async {
+    final locProvider = Provider.of<LocationProvider>(context, listen: false);
+
+    // 1. Získat polohu
+    await locProvider.determinePosition();
+
+    // 2. Pokud máme polohu, načteme akce podle ní. Pokud ne, použijeme default (Praha)
+    if (locProvider.currentPosition != null) {
+      _loadEvents(
+        lat: locProvider.currentPosition!.latitude,
+        lng: locProvider.currentPosition!.longitude,
+      );
+    } else {
+      // Fallback pokud uživatel zamítl polohu
+      _loadEvents(lat: 50.087, lng: 14.42);
+    }
+  }
+
+  // API FETCH EVENTŮ
+  Future<void> _loadEvents({required double lat, required double lng}) async {
+    // Pokud nebyly zadány souřadnice, zkusíme je vytáhnout z providera
+
     setState(() {
       _isLoadingEvents = true;
       _eventsError = null;
@@ -37,8 +62,8 @@ class _MainScreenState extends State<MainScreen> {
 
     try {
       final events = await _eventsService.fetchNearby(
-        lat: 50.087,
-        lng: 14.42,
+        lat: lat,
+        lng: lng,
         radius: 5000,
       );
       debugPrint('Staženo akcí: ${events.length}');
@@ -52,10 +77,7 @@ class _MainScreenState extends State<MainScreen> {
         _eventsError = 'Nepodařilo se načíst akce.';
       });
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoadingEvents = false;
-      });
+      if (mounted) setState(() => _isLoadingEvents = false);
     }
   }
 
@@ -71,8 +93,55 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isMap = _selectedIndex == -1;
+    final locProvider = context.watch<LocationProvider>();
 
+    // 1. SCÉNÁŘ: První spuštění - nemáme polohu a načítáme
+    if (locProvider.isLoading && locProvider.currentPosition == null) {
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 20),
+              Text(
+                "Zjišťuji vaši polohu...",
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // 2. SCÉNÁŘ: Máme chybu a nemáme polohu (např. uživatel zakázal GPS)
+    if (locProvider.errorMessage != null &&
+        locProvider.currentPosition == null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.location_off, size: 60, color: Colors.red),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  locProvider.errorMessage!,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () =>
+                    locProvider.determinePosition(), // Zkusit znovu
+                child: const Text("Zkusit znovu"),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final isMap = _selectedIndex == -1;
     return Scaffold(
       appBar: isMap
           ? null
@@ -85,7 +154,7 @@ class _MainScreenState extends State<MainScreen> {
                   IconButton(
                     icon: const Icon(Icons.refresh),
                     tooltip: 'Načíst akce',
-                    onPressed: _isLoadingEvents ? null : _loadEvents,
+                    onPressed: _isLoadingEvents ? null : _initLocationAndEvents,
                   ),
               ],
             ),
@@ -93,7 +162,12 @@ class _MainScreenState extends State<MainScreen> {
           ? SafeArea(
               top: true,
               bottom: false,
-              child: MapScreen(controller: _mapController, events: _events),
+              child: MapScreen(
+                controller: _mapController,
+                events: _events,
+                userLocation: locProvider.currentPosition,
+                isLoading: locProvider.isLoading,
+              ),
             )
           : _buildSectionBody(),
       extendBody: true,
@@ -156,7 +230,7 @@ class _MainScreenState extends State<MainScreen> {
             Text(_eventsError!, textAlign: TextAlign.center),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: _loadEvents,
+              onPressed: _initLocationAndEvents,
               child: const Text('Zkusit znovu'),
             ),
           ],
@@ -169,7 +243,7 @@ class _MainScreenState extends State<MainScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: _loadEvents,
+      onRefresh: _initLocationAndEvents,
       child: EventsScreen(events: _events, onShowOnMap: _handleShowOnMap),
     );
   }

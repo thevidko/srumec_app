@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_popup/flutter_map_marker_popup.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:srumec_app/controller/map_view_controller.dart';
 import 'package:srumec_app/models/event.dart';
@@ -9,9 +10,17 @@ import 'widgets/event_popup_bubble.dart';
 import 'widgets/map_markers.dart';
 
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key, required this.controller, required this.events});
+  const MapScreen({
+    super.key,
+    required this.controller,
+    required this.events,
+    this.userLocation,
+    this.isLoading = false,
+  });
   final MapViewController controller;
   final List<Event> events;
+  final Position? userLocation;
+  final bool isLoading;
   @override
   State<MapScreen> createState() => _MapScreenState();
 }
@@ -28,35 +37,48 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     widget.controller.attach(_lockOn); // ⬅️ registrace callbacku z controlleru
-    _markers = buildEventMarkers(widget.events, (e) => _lockOn(e));
+    _buildMarkers();
   }
 
   @override
   void didUpdateWidget(covariant MapScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.controller != widget.controller) {
-      widget.controller.attach(_lockOn);
-    }
-    if (oldWidget.events != widget.events) {
+    if (oldWidget.events != widget.events ||
+        oldWidget.userLocation != widget.userLocation) {
       _buildMarkers();
     }
   }
 
   void _buildMarkers() {
     debugPrint("Překresluji markery. Počet akcí: ${widget.events.length}");
-
+    List<Marker> markers = buildEventMarkers(widget.events, (e) => _lockOn(e));
     // Pro debug vypište souřadnice první akce
-    if (widget.events.isNotEmpty) {
-      debugPrint(
-        "První akce je na: ${widget.events.first.lat}, ${widget.events.first.lng}",
+    if (widget.userLocation != null) {
+      markers.add(
+        Marker(
+          width: 40,
+          height: 40,
+          point: LatLng(
+            widget.userLocation!.latitude,
+            widget.userLocation!.longitude,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.7),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: const [
+                BoxShadow(blurRadius: 5, color: Colors.black26),
+              ],
+            ),
+            child: const Icon(Icons.my_location, color: Colors.white, size: 20),
+          ),
+        ),
       );
     }
-
     setState(() {
-      _markers = buildEventMarkers(widget.events, (e) => _lockOn(e));
+      _markers = markers;
     });
-
-    debugPrint("Vytvořeno markerů: ${_markers.length}");
   }
 
   Future<void> animateMapMove(
@@ -83,6 +105,20 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     await controller.forward();
     anim.removeListener(listener);
     controller.dispose();
+  }
+
+  // Metoda pro centrování na uživatele
+  void _centerOnUser() {
+    if (widget.userLocation != null) {
+      _mapController.move(
+        LatLng(widget.userLocation!.latitude, widget.userLocation!.longitude),
+        14.0,
+      );
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Poloha není k dispozici')));
+    }
   }
 
   Future<void> _lockOn(Event e) async {
@@ -152,7 +188,12 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         FlutterMap(
           mapController: _mapController,
           options: MapOptions(
-            initialCenter: const LatLng(50.0755, 14.4378),
+            initialCenter: widget.userLocation != null
+                ? LatLng(
+                    widget.userLocation!.latitude,
+                    widget.userLocation!.longitude,
+                  )
+                : const LatLng(50.0755, 14.4378),
             initialZoom: 13.5,
             interactionOptions: InteractionOptions(
               flags: _isLocked ? flagsWhenLocked : flagsWhenFree,
@@ -200,6 +241,63 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               behavior: HitTestBehavior.translucent,
               onTap: _unlock,
               child: const SizedBox.shrink(),
+            ),
+          ),
+        Positioned(
+          right: 16,
+          bottom: 100, // Aby to nebylo pod hlavním FABem v MainScreen
+          child: FloatingActionButton.small(
+            heroTag:
+                "btn_my_location", // Unikátní tag, aby se nehádal s tím v MainScreen
+            backgroundColor: Colors.white,
+            onPressed: _centerOnUser,
+            child: Icon(
+              Icons.my_location,
+              color: widget.userLocation != null ? Colors.blue : Colors.grey,
+            ),
+          ),
+        ),
+        if (widget.isLoading)
+          Positioned(
+            top: 20, // Odsazení odshora
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9), // Průhledné pozadí
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 15,
+                      height: 15,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    SizedBox(width: 10),
+                    Text(
+                      "Zpřesňuji polohu...",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
       ],
