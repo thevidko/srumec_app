@@ -30,25 +30,21 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // 1. Získáme token ze serveru (vrací String?)
-      final token = await _authService.login(
+      final loginData = await _authService.login(
         _emailController.text,
         _passwordController.text,
       );
 
-      if (token != null) {
+      if (loginData != null) {
         if (!mounted) return;
 
-        // 2. DŮLEŽITÉ: Předáme token do AuthProvidera
-        // listen: false, protože uvnitř funkce nechceme překreslovat tento widget
-        await context.read<AuthProvider>().login(token);
+        final token = loginData['token'];
+        final userId = loginData['userId'];
 
-        // 3. ODSTRANĚNO: Navigator.pushReplacement(...)
-        // Nikam nenavigujeme ručně!
-        // AuthProvider změní stav -> AuthWrapper v main.dart to uvidí -> přepne na MainScreen sám.
+        await context.read<AuthProvider>().login(token, userId);
       } else {
         setState(() {
-          _errorMessage = 'Nesprávný email nebo heslo (token je null).';
+          _errorMessage = 'Nesprávný email nebo heslo.';
         });
       }
     } catch (e) {

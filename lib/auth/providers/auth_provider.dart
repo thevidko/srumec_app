@@ -4,45 +4,55 @@ import 'package:srumec_app/core/services/storage_service.dart';
 class AuthProvider with ChangeNotifier {
   final StorageService _storageService = StorageService();
 
-  // DŮLEŽITÉ: Defaultně false
   bool _isAuthenticated = false;
   bool _isLoading = true;
+  String? _userId;
 
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
+  String? get userId => _userId;
 
+  // Metoda pro kontrolu přítomnosti údajů
   Future<void> checkLoginStatus() async {
     final token = await _storageService.readToken();
-    // Jednoduchá logika: Máme token? -> Jsme přihlášeni.
-    _isAuthenticated = token != null;
+    final uid = await _storageService.readUserId();
+
+    if (token != null) {
+      _isAuthenticated = true;
+      _userId = uid;
+    } else {
+      _isAuthenticated = false;
+      _userId = null;
+    }
     _isLoading = false;
     notifyListeners();
   }
 
-  Future<void> login(String token) async {
+  // Login
+  Future<void> login(String token, String userId) async {
     await _storageService.saveToken(token);
+    await _storageService.saveUserId(userId);
+
     _isAuthenticated = true;
+    _userId = userId;
     notifyListeners();
   }
 
+  // Logout -> smazání všech credetials z paměti
   Future<void> logout() async {
-    debugPrint("🚪 AuthProvider: Provádím logout...");
+    await _storageService.deleteAll();
 
-    // 1. Smazat token z mobilu
-    await _storageService.deleteToken();
-
-    // 2. DŮLEŽITÉ: Změnit stav v paměti aplikace
     _isAuthenticated = false;
-
-    // 3. Říct aplikaci "Překresli se!"
+    _userId = null;
     notifyListeners();
-
-    debugPrint(
-      "🚪 AuthProvider: Logout hotov. isAuthenticated = $_isAuthenticated",
-    );
   }
 
+  // Gettery
   Future<String?> getToken() async {
     return await _storageService.readToken();
+  }
+
+  Future<String?> getUUID() async {
+    return await _storageService.readUserId();
   }
 }

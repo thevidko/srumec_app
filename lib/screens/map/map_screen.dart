@@ -4,6 +4,7 @@ import 'package:flutter_map_marker_popup/flutter_map_marker_popup.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:srumec_app/controller/map_view_controller.dart';
+import 'package:srumec_app/events/screens/event_detail_screen.dart';
 import 'package:srumec_app/models/event.dart';
 
 import 'widgets/event_popup_bubble.dart';
@@ -221,10 +222,17 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                     return EventPopupBubble(
                       title: e.title,
                       subtitle: e.description,
-                      onDetail: () =>
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Detail: ${e.title}')),
+                      onDetail: () {
+                        _unlock();
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => EventDetailScreen(
+                              event: e,
+                              onShowOnMap: _lockOn,
+                            ),
                           ),
+                        );
+                      },
                       onClose: _unlock,
                     );
                   },
@@ -233,16 +241,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             ),
           ],
         ),
-
-        // Pokud některá verze nepředá tap při flags none:
-        if (_isLocked)
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: _unlock,
-              child: const SizedBox.shrink(),
-            ),
-          ),
         Positioned(
           right: 16,
           bottom: 100, // Aby to nebylo pod hlavním FABem v MainScreen

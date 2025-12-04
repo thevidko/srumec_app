@@ -6,8 +6,6 @@ import '../../../../core/network/api_endpoints.dart';
 
 class EventsRemoteDataSource {
   final Dio dio;
-  // StorageService už tu nepotřebujeme! Řeší to Dio Interceptor.
-
   EventsRemoteDataSource(this.dio);
 
   Future<List<Event>> getNearbyEvents({
@@ -36,6 +34,35 @@ class EventsRemoteDataSource {
       // takže sem se to sice dostane, ale UI se stejně přepne.
       debugPrint("Chyba při stahování eventů: $e");
       rethrow;
+    }
+  }
+
+  //CREATE EVENT
+  Future<void> createEvent(Map<String, dynamic> body) async {
+    final url = '${ApiEndpoints.eventsBaseUrl}${Events.create}';
+
+    debugPrint("📤 Odesílám JSON body: $body");
+
+    try {
+      // Body už je připravené, stačí ho poslat
+      final response = await dio.post(url, data: body);
+
+      // Pokud server vrátí 200/201, považujeme to za úspěch
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          type: DioExceptionType.badResponse,
+        );
+      }
+    } on DioException catch (e) {
+      debugPrint(
+        "❌ Chyba vytvoření eventu (Status: ${e.response?.statusCode})",
+      );
+      debugPrint("📩 Odpověď serveru: ${e.response?.data}");
+      rethrow; // Pošleme chybu zpět do Repozitáře, kde ji chytáte do try-catch
     }
   }
 }

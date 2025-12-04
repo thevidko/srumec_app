@@ -1,6 +1,8 @@
 class ApiEndpoints {
   //IP
   static String get _host {
+    //return 'http://172.20.10.3';
+
     return 'http://10.0.2.2';
   }
 

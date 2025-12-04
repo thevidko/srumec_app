@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:srumec_app/events/screens/create_event_screen.dart';
 
 class MyEventsScreen extends StatelessWidget {
   const MyEventsScreen({super.key});
@@ -14,7 +15,11 @@ class MyEventsScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.event_available, size: 48, color: Colors.blueGrey),
+              const Icon(
+                Icons.event_available,
+                size: 48,
+                color: Colors.blueGrey,
+              ),
               const SizedBox(height: 12),
               const Text(
                 'Zde budou moje vytvořené akce',
@@ -26,8 +31,10 @@ class MyEventsScreen extends StatelessWidget {
                 icon: const Icon(Icons.add),
                 label: const Text('Vytvořit novou událost'),
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Tvorba nové události – brzy.')),
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const CreateEventScreen(),
+                    ),
                   );
                 },
               ),

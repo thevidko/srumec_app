@@ -44,7 +44,7 @@ class EventsScreen extends StatelessWidget {
                     event: e,
                     onShowOnMap: (evt) {
                       // po návratu na MainScreen přepni na mapu a ukaž popup
-                      Navigator.pop(context);
+                      //Navigator.pop(context);
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         onShowOnMap(evt);
                       });
