@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:srumec_app/auth/providers/auth_provider.dart';
 import 'package:srumec_app/auth/screens/login_screen.dart';
+import 'package:srumec_app/chat/data/datasources/chat_remote_data_source.dart';
+import 'package:srumec_app/chat/data/repositories/chat_repository.dart';
+import 'package:srumec_app/chat/providers/chat_provider.dart';
+import 'package:srumec_app/core/services/web_socket_service.dart';
 import 'package:srumec_app/comments/data/datasources/comments_remote_data_source.dart';
 import 'package:srumec_app/comments/data/repositories/comments_repository.dart';
 import 'package:srumec_app/comments/providers/comments_provider.dart';
@@ -10,48 +14,100 @@ import 'package:srumec_app/core/providers/locator/location_provider.dart';
 import 'package:srumec_app/events/data/datasources/events_remote_data_source.dart';
 import 'package:srumec_app/events/data/repositories/event_repository.dart';
 import 'package:srumec_app/screens/main_screen.dart';
+import 'package:srumec_app/users/data/datasources/users_remote_data_source.dart';
+import 'package:srumec_app/users/data/repositories/users_repository.dart';
+import 'package:srumec_app/users/providers/users_providers.dart';
 
 void main() {
   runApp(
+    // 1. VRSTVA: Infrastruktura (Data, Sítě, Repozitáře)
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => LocationProvider()),
-        // 1. AuthProvider (drží stav přihlášení)
         ChangeNotifierProvider(create: (_) => AuthProvider()),
 
-        // 2. DioClient (potřebuje AuthProvider, aby mohl dělat logout)
+        // WebSocket Service
+        Provider<WebSocketService>(create: (_) => WebSocketService()),
+        ProxyProvider<AuthProvider, WebSocketService>(
+          lazy: false,
+          update: (_, auth, wsService) {
+            if (wsService == null) return WebSocketService();
+            if (auth.isAuthenticated && auth.token != null) {
+              wsService.connect(auth.token!);
+            } else {
+              wsService.disconnect();
+            }
+            return wsService;
+          },
+        ),
+
+        // Dio & DataSources
         ProxyProvider<AuthProvider, DioClient>(
-          update: (_, authProvider, __) => DioClient(authProvider),
+          update: (_, auth, __) => DioClient(auth),
         ),
-
-        // 3. DataSource (potřebuje Dio z DioClienta)
         ProxyProvider<DioClient, EventsRemoteDataSource>(
-          update: (_, dioClient, __) => EventsRemoteDataSource(dioClient.dio),
+          update: (_, dio, __) => EventsRemoteDataSource(dio.dio),
         ),
-
-        // 4. Repository (potřebuje DataSource)
-        ProxyProvider<EventsRemoteDataSource, EventsRepository>(
-          update: (_, dataSource, __) => EventsRepository(dataSource),
-        ),
-
-        // 1. Comments DataSource
         ProxyProvider<DioClient, CommentsRemoteDataSource>(
-          update: (_, dioClient, __) => CommentsRemoteDataSource(dioClient.dio),
+          update: (_, dio, __) => CommentsRemoteDataSource(dio.dio),
+        ),
+        ProxyProvider<DioClient, ChatRemoteDataSource>(
+          update: (_, dio, __) => ChatRemoteDataSource(dio.dio),
         ),
 
-        // 2. Comments Repository
+        // Repositories
+        ProxyProvider<EventsRemoteDataSource, EventsRepository>(
+          update: (_, ds, __) => EventsRepository(ds),
+        ),
         ProxyProvider<CommentsRemoteDataSource, CommentsRepository>(
-          update: (_, dataSource, __) => CommentsRepository(dataSource),
+          update: (_, ds, __) => CommentsRepository(ds),
+        ),
+        ProxyProvider<ChatRemoteDataSource, ChatRepository>(
+          update: (_, ds, __) => ChatRepository(ds),
         ),
 
-        // 3. Comments Provider
-        ChangeNotifierProxyProvider<CommentsRepository, CommentsProvider>(
-          create: (context) =>
-              CommentsProvider(context.read<CommentsRepository>()),
-          update: (_, repo, previous) => CommentsProvider(repo),
+        ProxyProvider<DioClient, UsersRemoteDataSource>(
+          update: (_, dio, __) => UsersRemoteDataSource(dio.dio),
+        ),
+
+        // 2. Users Repository
+        ProxyProvider<UsersRemoteDataSource, UsersRepository>(
+          update: (_, ds, __) => UsersRepository(ds),
+        ),
+
+        // 3. Users Provider (Vložte do té DRUHÉ vrstvy 'child' MultiProvideru, tam kde je ChatProvider)
+        ChangeNotifierProxyProvider<UsersRepository, UsersProvider>(
+          create: (context) => UsersProvider(context.read<UsersRepository>()),
+          update: (_, repo, __) => UsersProvider(repo),
         ),
       ],
-      child: const SrumecApp(),
+      // 2. VRSTVA: Logika (Providers, které potřebují Repozitáře)
+      child: MultiProvider(
+        providers: [
+          // Comments Provider
+          ChangeNotifierProxyProvider<CommentsRepository, CommentsProvider>(
+            create: (context) =>
+                CommentsProvider(context.read<CommentsRepository>()),
+            update: (_, repo, prev) => CommentsProvider(repo),
+          ),
+
+          // Chat Provider
+          // TEĎ UŽ BUDE FUNGOVAT context.read<ChatRepository>(),
+          // protože je "pod" první vrstvou.
+          ChangeNotifierProxyProvider2<
+            ChatRepository,
+            WebSocketService,
+            ChatProvider
+          >(
+            create: (context) => ChatProvider(
+              context.read<ChatRepository>(),
+              context.read<WebSocketService>(),
+            ),
+            update: (_, repo, ws, prev) => ChatProvider(repo, ws),
+          ),
+        ],
+        child: const SrumecApp(),
+      ),
     ),
   );
 }
@@ -69,14 +125,11 @@ class SrumecApp extends StatelessWidget {
         useMaterial3: true,
       ),
       debugShowCheckedModeBanner: false,
-
-      // ZMĚNA: Tady nesmí být LoginScreen, ale náš rozhodovací Wrapper
       home: const AuthWrapper(),
     );
   }
 }
 
-/// Rozcestník: Rozhoduje, zda zobrazit Loading, Login nebo Hlavní aplikaci
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
 
@@ -88,7 +141,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
   @override
   void initState() {
     super.initState();
-    // Po vykreslení widgetu spustíme kontrolu tokenu
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AuthProvider>().checkLoginStatus();
     });
@@ -97,9 +149,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
-
-    // DEBUG VÝPIS
-    // print("AuthWrapper Build: isLoading=${authProvider.isLoading}, isAuth=${authProvider.isAuthenticated}");
 
     if (authProvider.isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));

@@ -7,12 +7,14 @@ class AuthProvider with ChangeNotifier {
   bool _isAuthenticated = false;
   bool _isLoading = true;
   String? _userId;
+  String? _token; // <--- PŘIDÁNO: Držíme token v paměti
 
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
   String? get userId => _userId;
+  String? get token => _token; // <--- PŘIDÁNO: Getter
 
-  // Metoda pro kontrolu přítomnosti údajů
+  // Metoda pro kontrolu přítomnosti údajů při startu
   Future<void> checkLoginStatus() async {
     final token = await _storageService.readToken();
     final uid = await _storageService.readUserId();
@@ -20,9 +22,11 @@ class AuthProvider with ChangeNotifier {
     if (token != null) {
       _isAuthenticated = true;
       _userId = uid;
+      _token = token; // <--- PŘIDÁNO: Uložíme do paměti
     } else {
       _isAuthenticated = false;
       _userId = null;
+      _token = null;
     }
     _isLoading = false;
     notifyListeners();
@@ -35,15 +39,17 @@ class AuthProvider with ChangeNotifier {
 
     _isAuthenticated = true;
     _userId = userId;
+    _token = token; // <--- PŘIDÁNO: Uložíme do paměti
     notifyListeners();
   }
 
-  // Logout -> smazání všech credetials z paměti
+  // Logout
   Future<void> logout() async {
     await _storageService.deleteAll();
 
     _isAuthenticated = false;
     _userId = null;
+    _token = null; // <--- PŘIDÁNO: Vymažeme z paměti
     notifyListeners();
   }
 

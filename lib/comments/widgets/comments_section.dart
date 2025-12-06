@@ -147,7 +147,7 @@ class _CommentsSectionState extends State<CommentsSection> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                comment.userId,
+                comment.userName,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 13,

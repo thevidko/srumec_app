@@ -26,7 +26,23 @@ class Auth {
   static const String login = '/auth/login';
 }
 
+class UserEndpoints {
+  static const String base = '/auth/users/';
+}
+
 class CommentsEndpoints {
   static const String getByEvent = '/v1/comments/get-all';
   static const String create = '/v1/comments/create-one';
+}
+
+class ChatEndpoints {
+  //Direct rooms
+  static const String createDirectRoom = '/v1/chats/direct/create-one';
+  //Výpis všech chatů, kde je uživatel podle JWT účastníkem.
+  static const String getAllMyDirectRooms = '/v1/chats/direct/get-all';
+
+  //Group roomy asi řešit nebudeme zatím.
+
+  static const String getAllMessages = '/v1/chats/direct/messages/get-all';
+  static const String createMessage = '/v1/chats/direct/messages/create-one';
 }

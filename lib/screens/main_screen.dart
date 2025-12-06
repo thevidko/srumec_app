@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:srumec_app/chat/screens/chat_list_screen.dart';
 import 'package:srumec_app/controller/map_view_controller.dart';
 import 'package:srumec_app/core/providers/locator/location_provider.dart';
 import 'package:srumec_app/events/data/repositories/event_repository.dart';
@@ -212,7 +213,7 @@ class _MainScreenState extends State<MainScreen> {
       case 1:
         return const MyEventsScreen();
       case 2:
-        return const ChatScreen();
+        return const ChatListScreen();
       case 3:
         return const ProfileScreen();
       default:
