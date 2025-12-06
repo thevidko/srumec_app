@@ -16,6 +16,7 @@ class ApiEndpoints {
 class Events {
   static const String getAll = '/v1/events/get-nearby';
   static const String getOne = '/v1/events/get-one';
+  static const String getMy = '/v1/events/get-my-events';
   static const String create = '/v1/events/create-one';
   static const String delete = '/v1/events/delete-one';
   static const String update = '/v1/events/delete-one';
@@ -23,4 +24,9 @@ class Events {
 
 class Auth {
   static const String login = '/auth/login';
+}
+
+class CommentsEndpoints {
+  static const String getByEvent = '/v1/comments/get-all';
+  static const String create = '/v1/comments/create-one';
 }

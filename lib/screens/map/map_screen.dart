@@ -5,7 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:srumec_app/controller/map_view_controller.dart';
 import 'package:srumec_app/events/screens/event_detail_screen.dart';
-import 'package:srumec_app/models/event.dart';
+import 'package:srumec_app/events/models/event.dart';
 
 import 'widgets/event_popup_bubble.dart';
 import 'widgets/map_markers.dart';

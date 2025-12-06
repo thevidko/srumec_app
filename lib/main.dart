@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:srumec_app/auth/providers/auth_provider.dart';
 import 'package:srumec_app/auth/screens/login_screen.dart';
+import 'package:srumec_app/comments/data/datasources/comments_remote_data_source.dart';
+import 'package:srumec_app/comments/data/repositories/comments_repository.dart';
+import 'package:srumec_app/comments/providers/comments_provider.dart';
 import 'package:srumec_app/core/network/dio_client.dart';
 import 'package:srumec_app/core/providers/locator/location_provider.dart';
 import 'package:srumec_app/events/data/datasources/events_remote_data_source.dart';
@@ -29,6 +32,23 @@ void main() {
         // 4. Repository (potřebuje DataSource)
         ProxyProvider<EventsRemoteDataSource, EventsRepository>(
           update: (_, dataSource, __) => EventsRepository(dataSource),
+        ),
+
+        // 1. Comments DataSource
+        ProxyProvider<DioClient, CommentsRemoteDataSource>(
+          update: (_, dioClient, __) => CommentsRemoteDataSource(dioClient.dio),
+        ),
+
+        // 2. Comments Repository
+        ProxyProvider<CommentsRemoteDataSource, CommentsRepository>(
+          update: (_, dataSource, __) => CommentsRepository(dataSource),
+        ),
+
+        // 3. Comments Provider
+        ChangeNotifierProxyProvider<CommentsRepository, CommentsProvider>(
+          create: (context) =>
+              CommentsProvider(context.read<CommentsRepository>()),
+          update: (_, repo, previous) => CommentsProvider(repo),
         ),
       ],
       child: const SrumecApp(),

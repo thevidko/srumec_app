@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:srumec_app/models/event.dart';
+import 'package:srumec_app/comments/widgets/comments_section.dart';
+import 'package:srumec_app/events/models/event.dart';
 
 class EventDetailScreen extends StatelessWidget {
   const EventDetailScreen({
@@ -34,15 +35,8 @@ class EventDetailScreen extends StatelessWidget {
 
           // (volitelné) místo pro další data – čas, místo, popis, atd.
           const SizedBox(height: 12),
-          Text(
-            'Popis',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            event.description ?? 'Bez detailního popisu.',
-            style: const TextStyle(fontSize: 15),
-          ),
+
+          CommentsSection(eventId: event.id),
 
           const SizedBox(height: 24),
 

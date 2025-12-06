@@ -6,7 +6,7 @@ import 'package:srumec_app/events/data/repositories/event_repository.dart';
 import 'package:srumec_app/events/screens/events_screen.dart';
 import 'package:srumec_app/events/screens/my_events_screen.dart';
 import 'package:srumec_app/events/services/events_service.dart';
-import 'package:srumec_app/models/event.dart';
+import 'package:srumec_app/events/models/event.dart';
 import 'package:srumec_app/screens/chat_screen.dart';
 import 'package:srumec_app/screens/map/map_screen.dart';
 import 'package:srumec_app/screens/profile_screen.dart';

@@ -1,7 +1,6 @@
-// events_remote_data_source.dart
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:srumec_app/models/event.dart';
+import 'package:srumec_app/events/models/event.dart';
 import '../../../../core/network/api_endpoints.dart';
 
 class EventsRemoteDataSource {
@@ -20,9 +19,6 @@ class EventsRemoteDataSource {
       "longitude": longitude,
       "radius_m": radius,
     };
-
-    // Už žádné ruční přidávání Options s hlavičkami!
-    // Interceptor to tam "strčí" sám.
 
     try {
       final response = await dio.post(url, data: body);
@@ -63,6 +59,21 @@ class EventsRemoteDataSource {
       );
       debugPrint("📩 Odpověď serveru: ${e.response?.data}");
       rethrow; // Pošleme chybu zpět do Repozitáře, kde ji chytáte do try-catch
+    }
+  }
+
+  // GET MY EVENTS
+  Future<List<Event>> getMyEvents() async {
+    final url = '${ApiEndpoints.eventsBaseUrl}${Events.getMy}';
+    try {
+      debugPrint("🚀 Odesílám request na: $url");
+      debugPrint("🔑 Headers: ${dio.options.headers}");
+      final response = await dio.post(url, data: {});
+      final List<dynamic> data = response.data;
+      return data.map((json) => Event.fromJson(json)).toList();
+    } catch (e) {
+      debugPrint("Chyba při stahování mých eventů: $e");
+      rethrow;
     }
   }
 }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../models/event.dart';
+import '../../../events/models/event.dart';
 
 class EventListPanel extends StatelessWidget {
   final List<Event> events;
@@ -19,16 +19,20 @@ class EventListPanel extends StatelessWidget {
         Center(
           child: Container(
             margin: const EdgeInsets.only(top: 8.0, bottom: 8.0),
-            width: 40, height: 5,
+            width: 40,
+            height: 5,
             decoration: BoxDecoration(
-              color: Colors.grey[300], borderRadius: BorderRadius.circular(10),
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(10),
             ),
           ),
         ),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16.0),
-          child: Text("Akce v okolí",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          child: Text(
+            "Akce v okolí",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
         ),
         Expanded(
           child: ListView.builder(

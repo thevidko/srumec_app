@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:srumec_app/events/data/datasources/events_remote_data_source.dart';
-import 'package:srumec_app/models/event.dart';
+import 'package:srumec_app/events/models/event.dart';
 
 class EventsRepository {
   final EventsRemoteDataSource remoteDataSource;
@@ -49,6 +49,16 @@ class EventsRepository {
     } catch (e) {
       debugPrint("Chyba v repo při create eventu: $e");
       return false;
+    }
+  }
+
+  //GET MY EVENTS
+  Future<List<Event>> getMyEvents() async {
+    try {
+      return await remoteDataSource.getMyEvents();
+    } catch (e) {
+      debugPrint("Chyba v repo. Získávání my events: $e");
+      return [];
     }
   }
 }

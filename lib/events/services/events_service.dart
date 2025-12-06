@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:srumec_app/events/data/datasources/events_remote_data_source.dart';
 import 'package:srumec_app/events/data/repositories/event_repository.dart';
-import 'package:srumec_app/models/event.dart';
+import 'package:srumec_app/events/models/event.dart';
 
 class EventsService {
   EventsService({Dio? dio})
@@ -15,5 +15,9 @@ class EventsService {
     int radius = 5000,
   }) {
     return _repository.getNearbyEvents(lat: lat, lng: lng, radius: radius);
+  }
+
+  Future<List<Event>> fetchMyEvents() {
+    return _repository.getMyEvents();
   }
 }

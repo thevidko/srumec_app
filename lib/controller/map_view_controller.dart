@@ -1,4 +1,4 @@
-import '../../models/event.dart';
+import '../events/models/event.dart';
 
 class MapViewController {
   void Function(Event e)? _showOnMap;

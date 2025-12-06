@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:srumec_app/models/event.dart';
+import 'package:srumec_app/events/models/event.dart';
 import 'package:srumec_app/events/screens/event_detail_screen.dart';
 
 class EventsScreen extends StatelessWidget {
