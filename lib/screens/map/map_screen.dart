@@ -8,7 +8,7 @@ import 'package:srumec_app/events/screens/event_detail_screen.dart';
 import 'package:srumec_app/events/models/event.dart';
 
 import 'widgets/event_popup_bubble.dart';
-import 'widgets/map_markers.dart';
+// import 'widgets/map_markers.dart'; // Už nepotřebujeme, definujeme styl přímo zde
 
 class MapScreen extends StatefulWidget {
   const MapScreen({
@@ -32,12 +32,16 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   late List<Marker> _markers;
 
   Event? _selected;
-  bool _isLocked = false; // ⬅️ když je popup otevřený a mapa je “zamčená”
+  bool _isLocked = false;
+
+  // Definice našich barev (stejné jako v MainScreen)
+  static const Color vibrantPurple = Color(0xFF6200EA);
+  static const Color neonAccent = Color(0xFFD500F9);
 
   @override
   void initState() {
     super.initState();
-    widget.controller.attach(_lockOn); // ⬅️ registrace callbacku z controlleru
+    widget.controller.attach(_lockOn);
     _buildMarkers();
   }
 
@@ -51,9 +55,24 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   }
 
   void _buildMarkers() {
-    debugPrint("Překresluji markery. Počet akcí: ${widget.events.length}");
-    List<Marker> markers = buildEventMarkers(widget.events, (e) => _lockOn(e));
-    // Pro debug vypište souřadnice první akce
+    // 1. Markery pro AKCE
+    List<Marker> markers = widget.events.map((event) {
+      return Marker(
+        width: 45, // Šířka ikony
+        height: 45, // Výška ikony
+        point: LatLng(event.lat, event.lng),
+        // Alignment: Default je střed. U špendlíku chceme, aby "špička"
+        // ukazovala na místo. Proto posuneme těžiště trochu nahoru.
+        alignment: Alignment.topCenter,
+        child: GestureDetector(
+          onTap: () => _lockOn(event),
+          // Zde voláme novou zjednodušenou metodu
+          child: _buildCustomPin(vibrantPurple),
+        ),
+      );
+    }).toList();
+
+    // 2. Marker pro UŽIVATELE (ten necháme v kroužku, aby se odlišil)
     if (widget.userLocation != null) {
       markers.add(
         Marker(
@@ -65,11 +84,15 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           ),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.7),
+              color: neonAccent, // Neonová tečka
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-              boxShadow: const [
-                BoxShadow(blurRadius: 5, color: Colors.black26),
+              border: Border.all(color: Colors.white, width: 2.5), // Bílý lem
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: 8,
+                  color: neonAccent.withOpacity(0.5), // Záře
+                  spreadRadius: 2,
+                ),
               ],
             ),
             child: const Icon(Icons.my_location, color: Colors.white, size: 20),
@@ -77,9 +100,23 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         ),
       );
     }
+
     setState(() {
       _markers = markers;
     });
+  }
+
+  // UPRAVENÁ METODA: Pouze čistá ikona bez kolečka okolo
+  Widget _buildCustomPin(Color color) {
+    return Icon(
+      Icons.location_on, // Klasický špendlík
+      color: color,
+      size: 45,
+      // Přidáme stín přímo ikoně, aby se neslévala s mapou
+      shadows: const [
+        Shadow(offset: Offset(0, 2), blurRadius: 6.0, color: Colors.black38),
+      ],
+    );
   }
 
   Future<void> animateMapMove(
@@ -108,12 +145,11 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     controller.dispose();
   }
 
-  // Metoda pro centrování na uživatele
   void _centerOnUser() {
     if (widget.userLocation != null) {
       _mapController.move(
         LatLng(widget.userLocation!.latitude, widget.userLocation!.longitude),
-        14.0,
+        15.0, // Přiblížíme trochu víc
       );
     } else {
       ScaffoldMessenger.of(
@@ -129,14 +165,12 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     });
 
     final dest = LatLng(e.lat, e.lng);
-    // nastav si cílový zoom – třeba 15.0 (nebo nech stávající)
     final targetZoom = (_mapController.camera.zoom < 14.5)
         ? 15.0
         : _mapController.camera.zoom;
 
     await animateMapMove(dest, targetZoom);
 
-    // otevřít popup u daného markeru
     final marker = _findMarkerForEvent(e);
     if (marker != null) {
       _popupController.showPopupsOnlyFor([marker]);
@@ -149,13 +183,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       _selected = null;
       _isLocked = false;
     });
-  }
-
-  void _goToDetail(Event e) {
-    // Navigator.pushNamed(context, '/eventDetail', arguments: e);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Detail: ${e.title}')));
   }
 
   Marker? _findMarkerForEvent(Event e) {
@@ -180,7 +207,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    // flutter_map 6.x
     final flagsWhenLocked = InteractiveFlag.none;
     final flagsWhenFree = InteractiveFlag.all & ~InteractiveFlag.rotate;
 
@@ -195,7 +221,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                     widget.userLocation!.longitude,
                   )
                 : const LatLng(50.0755, 14.4378),
-            initialZoom: 13.5,
+            initialZoom: 15,
             interactionOptions: InteractionOptions(
               flags: _isLocked ? flagsWhenLocked : flagsWhenFree,
             ),
@@ -205,6 +231,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           ),
           children: [
             TileLayer(
+              // Ponecháváme light verzi, k fialové ladí nejlépe
               urlTemplate:
                   'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png',
               subdomains: const ['a', 'b', 'c'],
@@ -219,6 +246,8 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   builder: (context, marker) {
                     final e = _findEventForMarker(marker);
                     if (e == null) return const SizedBox.shrink();
+                    // Zde by ideálně měla být také úprava stylu EventPopupBubble,
+                    // ale to je v jiném souboru.
                     return EventPopupBubble(
                       title: e.title,
                       subtitle: e.description,
@@ -241,39 +270,44 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             ),
           ],
         ),
+
+        // Tlačítko pro návrat na polohu uživatele
         Positioned(
           right: 16,
-          bottom: 100, // Aby to nebylo pod hlavním FABem v MainScreen
+          bottom: 100,
           child: FloatingActionButton.small(
-            heroTag:
-                "btn_my_location", // Unikátní tag, aby se nehádal s tím v MainScreen
-            backgroundColor: Colors.white,
+            heroTag: "btn_my_location",
+            backgroundColor: Colors.white, // Bílé pozadí
+            elevation: 4,
             onPressed: _centerOnUser,
+            // Ikonka fialová, aby ladila
             child: Icon(
               Icons.my_location,
-              color: widget.userLocation != null ? Colors.blue : Colors.grey,
+              color: widget.userLocation != null ? vibrantPurple : Colors.grey,
             ),
           ),
         ),
+
+        // Loading indikátor nahoře
         if (widget.isLoading)
           Positioned(
-            top: 20, // Odsazení odshora
+            top: 20,
             left: 0,
             right: 0,
             child: Center(
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 8,
+                  vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9), // Průhledné pozadí
-                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.white.withOpacity(0.95),
+                  borderRadius: BorderRadius.circular(25), // Více kulaté
                   boxShadow: const [
                     BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 4,
-                      offset: Offset(0, 2),
+                      color: Colors.black12,
+                      blurRadius: 8,
+                      offset: Offset(0, 3),
                     ),
                   ],
                 ),
@@ -281,16 +315,20 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     SizedBox(
-                      width: 15,
-                      height: 15,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: vibrantPurple, // Fialové načítání
+                      ),
                     ),
-                    SizedBox(width: 10),
+                    SizedBox(width: 12),
                     Text(
                       "Zpřesňuji polohu...",
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600, // Tučnější font
+                        color: Colors.black87,
                       ),
                     ),
                   ],

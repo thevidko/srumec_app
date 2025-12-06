@@ -16,10 +16,13 @@ class CreateEventScreen extends StatefulWidget {
 class _CreateEventScreenState extends State<CreateEventScreen> {
   final _formKey = GlobalKey<FormState>();
 
+  // Definice naší barvy
+  static const Color vibrantPurple = Color(0xFF6200EA);
+
   // Controllers
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
-  final _latController = TextEditingController(text: "50.087"); // Default Praha
+  final _latController = TextEditingController(text: "50.087");
   final _lngController = TextEditingController(text: "14.420");
 
   DateTime? _selectedDate;
@@ -43,6 +46,19 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       initialDate: now,
       firstDate: now,
       lastDate: DateTime(2100),
+      // Aby kalendář ladil taky do fialova
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: vibrantPurple,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) {
       setState(() => _selectedDate = picked);
@@ -52,7 +68,22 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   // Výběr času
   Future<void> _pickTime() async {
     final now = TimeOfDay.now();
-    final picked = await showTimePicker(context: context, initialTime: now);
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: now,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: vibrantPurple,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
     if (picked != null) {
       setState(() => _selectedTime = picked);
     }
@@ -81,7 +112,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
     setState(() => _isLoading = true);
 
-    // Spojení Date a Time do jednoho DateTime
     final finalDateTime = DateTime(
       _selectedDate!.year,
       _selectedDate!.month,
@@ -90,25 +120,20 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       _selectedTime!.minute,
     );
 
-    // Získání dat (konverze lat/lng na double)
     final lat =
         double.tryParse(_latController.text.replaceAll(',', '.')) ?? 0.0;
     final lng =
         double.tryParse(_lngController.text.replaceAll(',', '.')) ?? 0.0;
 
     try {
-      // 2. ZÍSKÁNÍ REPOZITÁŘE Z PROVIDERA (Dependency Injection)
-      // -----------------------------------------------------
-      // Díky tomu použijeme tu instanci, která má Dio s Interceptorem (a tokenem)
       final repository = context.read<EventsRepository>();
-
       final success = await repository.createEvent(
         title: _titleController.text,
         description: _descController.text,
         latitude: lat,
         longitude: lng,
         happenTime: finalDateTime,
-        userId: userId, // <--- Použijeme ID z providera
+        userId: userId,
       );
 
       if (mounted) {
@@ -119,7 +144,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               backgroundColor: Colors.green,
             ),
           );
-          Navigator.of(context).pop(); // Návrat zpět
+          Navigator.of(context).pop();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -142,11 +167,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     }
   }
 
-  // Metoda 1: Získat z GPS (LocationProvider)
   Future<void> _useCurrentLocation() async {
     final locProvider = context.read<LocationProvider>();
-
-    // Zobrazíme loading nebo toast, že se zaměřuje
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Zjišťuji polohu...'),
@@ -169,9 +191,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     }
   }
 
-  // Metoda 2: Otevřít mapu
   Future<void> _pickFromMap() async {
-    // Zkusíme vzít aktuální hodnoty z inputů pro startovní pozici mapy
     final currentLat = double.tryParse(_latController.text);
     final currentLng = double.tryParse(_lngController.text);
     LatLng? startPos;
@@ -180,14 +200,12 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       startPos = LatLng(currentLat, currentLng);
     }
 
-    // Otevřeme picker a čekáme na výsledek
     final result = await Navigator.of(context).push<LatLng>(
       MaterialPageRoute(
         builder: (context) => LocationPickerScreen(initialLocation: startPos),
       ),
     );
 
-    // Pokud uživatel něco vybral, aktualizujeme UI
     if (result != null) {
       setState(() {
         _latController.text = result.latitude.toString();
@@ -196,12 +214,37 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     }
   }
 
+  // Pomocná metoda pro styl inputů
+  InputDecoration _inputDecoration(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(color: Colors.black54),
+      floatingLabelStyle: const TextStyle(
+        color: vibrantPurple,
+      ), // Fialový label při psaní
+      prefixIcon: Icon(icon, color: vibrantPurple), // Fialová ikona
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: vibrantPurple, width: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Nová událost")),
+      appBar: AppBar(
+        title: const Text(
+          "Nová událost",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: vibrantPurple, // Sladění s MainScreen
+        foregroundColor: Colors.white,
+        centerTitle: true,
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
@@ -210,11 +253,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               // NÁZEV
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Název akce',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.title),
-                ),
+                cursorColor: vibrantPurple,
+                decoration: _inputDecoration('Název akce', Icons.title),
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Zadejte název' : null,
               ),
@@ -224,15 +264,12 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               TextFormField(
                 controller: _descController,
                 maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Popis',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.description),
-                ),
+                cursorColor: vibrantPurple,
+                decoration: _inputDecoration('Popis', Icons.description),
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Zadejte popis' : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               // DATUM A ČAS (Row)
               Row(
@@ -246,6 +283,18 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                             ? 'Datum'
                             : '${_selectedDate!.day}.${_selectedDate!.month}.${_selectedDate!.year}',
                       ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: vibrantPurple, // Fialový text a ikona
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: BorderSide(
+                          color: _selectedDate != null
+                              ? vibrantPurple
+                              : Colors.grey.shade400,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -258,19 +307,35 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                             ? 'Čas'
                             : _selectedTime!.format(context),
                       ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: vibrantPurple,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: BorderSide(
+                          color: _selectedTime != null
+                              ? vibrantPurple
+                              : Colors.grey.shade400,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
               const Text(
                 "Místo konání",
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.black87,
+                ),
               ),
               const SizedBox(height: 10),
 
-              // Tlačítka pro výběr
+              // Tlačítka pro výběr - OPRAVA STYLU
               Row(
                 children: [
                   Expanded(
@@ -279,7 +344,15 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                       icon: const Icon(Icons.my_location),
                       label: const Text("Moje poloha"),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[50],
+                        // Světlounce fialové pozadí
+                        backgroundColor: vibrantPurple.withOpacity(0.1),
+                        // Sytě fialový text/ikona
+                        foregroundColor: vibrantPurple,
+                        elevation: 0, // Bez stínu (vypadá to čistěji)
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ),
@@ -287,22 +360,34 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: _pickFromMap,
-                      icon: const Icon(Icons.map),
+                      icon: const Icon(Icons.map_outlined),
                       label: const Text("Vybrat z mapy"),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[50],
+                        // Stejný styl pro konzistenci
+                        backgroundColor: vibrantPurple.withOpacity(0.1),
+                        foregroundColor: vibrantPurple,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 32),
 
               // TLAČÍTKO ODESLAT
               FilledButton(
                 onPressed: _isLoading ? null : _submitForm,
                 style: FilledButton.styleFrom(
+                  backgroundColor: vibrantPurple, // Hlavní barva
                   padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
                 ),
                 child: _isLoading
                     ? const SizedBox(
@@ -315,7 +400,10 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                       )
                     : const Text(
                         "Vytvořit událost",
-                        style: TextStyle(fontSize: 16),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
               ),
             ],

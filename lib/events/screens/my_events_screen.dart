@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // Důležitý import
+import 'package:provider/provider.dart';
 import 'package:srumec_app/events/data/repositories/event_repository.dart';
 import 'package:srumec_app/events/screens/create_event_screen.dart';
 import 'package:srumec_app/events/models/event.dart';
@@ -12,6 +12,10 @@ class MyEventsScreen extends StatefulWidget {
 }
 
 class _MyEventsScreenState extends State<MyEventsScreen> {
+  // Naše brand barvy
+  static const Color vibrantPurple = Color(0xFF6200EA);
+  static const Color neonAccent = Color(0xFFD500F9);
+
   List<Event> _myEvents = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -19,8 +23,6 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
   @override
   void initState() {
     super.initState();
-    // Zavoláme načtení až po vykreslení prvního framu,
-    // abychom mohli bezpečně použít context
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadEvents();
     });
@@ -33,10 +35,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
     });
 
     try {
-      // ZMĚNA: Používáme context.read<EventsRepository>(),
-      // který už má v sobě správně nastavený Dio s Tokenem díky main.dart
       final events = await context.read<EventsRepository>().getMyEvents();
-
       if (mounted) {
         setState(() {
           _myEvents = events;
@@ -49,75 +48,104 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
           _errorMessage = "Nepodařilo se načíst události.";
           _isLoading = false;
         });
-        print("Chyba při načítání: $e");
       }
     }
   }
 
   Future<void> _handleCreateEvent() async {
-    // 1. Otevřeme obrazovku pro vytvoření a čekáme na návrat (await)
     await Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (context) => const CreateEventScreen()));
-
-    // 2. Po návratu (kdy uživatel zavřel obrazovku vytvoření) obnovíme data
-    // Předpokládáme, že pokud se vrátil, mohl něco vytvořit.
-    // Pro lepší optimalizaci by CreateEventScreen mohl vracet true/false.
     _loadEvents();
   }
 
   @override
   Widget build(BuildContext context) {
+    // Jemně šedé pozadí, aby bílé karty vynikly
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: const Color(0xFFF5F5F7),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. OBLAST TLAČÍTKA (Nahoře - vždy viditelné)
-          _buildTopActionSection(),
+          // 1. Hlavička s tlačítkem
+          _buildHeader(),
 
-          // 2. SEZNAM (Zbytek místa)
+          // 2. Seznam
           Expanded(child: _buildContent()),
         ],
       ),
     );
   }
 
-  // Nová sekce pro horní tlačítko
-  Widget _buildTopActionSection() {
+  Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        // Volitelné: jemný stín pod tlačítkem, aby se oddělilo od seznamu při scrollování
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            offset: const Offset(0, 4),
-            blurRadius: 4,
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: Offset(0, 4),
           ),
         ],
       ),
-      child: SizedBox(
-        width: double.infinity,
-        height: 50, // Dostatečně velké pro pohodlné kliknutí
-        child: FilledButton.icon(
-          onPressed: _handleCreateEvent,
-          icon: const Icon(Icons.add),
-          label: const Text('Vytvořit novou událost'),
-          style: FilledButton.styleFrom(
-            elevation: 0, // Plochý vzhled, modernější
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Gradientní tlačítko pro vytvoření
+          Container(
+            width: double.infinity,
+            height: 52,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [vibrantPurple, neonAccent],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: vibrantPurple.withOpacity(0.4),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _handleCreateEvent,
+                borderRadius: BorderRadius.circular(16),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.add_circle_outline, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text(
+                      'Vytvořit novou akci',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildContent() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(color: vibrantPurple),
+      );
     }
 
     if (_errorMessage != null) {
@@ -125,11 +153,12 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const Icon(Icons.wifi_off, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
-            Text(_errorMessage!),
+            Text(_errorMessage!, style: const TextStyle(color: Colors.grey)),
             TextButton(
               onPressed: _loadEvents,
+              style: TextButton.styleFrom(foregroundColor: vibrantPurple),
               child: const Text("Zkusit znovu"),
             ),
           ],
@@ -138,15 +167,39 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
     }
 
     if (_myEvents.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.event_busy, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 20,
+                    spreadRadius: 5,
+                  ),
+                ],
+              ),
+              child: Icon(Icons.event_note, size: 60, color: Colors.grey[300]),
+            ),
+            const SizedBox(height: 20),
             Text(
-              'Zatím jsi nevytvořil žádné akce.',
-              style: TextStyle(fontSize: 18, color: Colors.grey),
+              'Zatím tu je prázdno',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Vytvoř svou první akci a dej o ní vědět ostatním!',
+              style: TextStyle(color: Colors.grey[600]),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -154,134 +207,156 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
     }
 
     return RefreshIndicator(
+      color: vibrantPurple,
       onRefresh: _loadEvents,
       child: ListView.separated(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(20),
         itemCount: _myEvents.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 12),
+        separatorBuilder: (context, index) => const SizedBox(height: 16),
         itemBuilder: (context, index) {
           final event = _myEvents[index];
-          return _buildEventCard(event);
+          return _buildModernEventCard(event);
         },
       ),
     );
   }
 
-  Widget _buildEventCard(Event event) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // HLAVIČKA: Titulek + Status
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    event.title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _buildStatusBadge(event.status),
-              ],
-            ),
-
-            const SizedBox(height: 8),
-
-            // POPIS
-            Text(
-              event.description,
-              style: TextStyle(color: Colors.grey[700]),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-
-            const Divider(height: 24),
-
-            // SPODNÍ ŘÁDEK: Datum a čas
-            Row(
-              children: [
-                const Icon(
-                  Icons.calendar_today,
-                  size: 16,
-                  color: Colors.blueGrey,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  _formatDate(event.happenTime),
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Pomocná metoda pro barevný štítek statusu
-  Widget _buildStatusBadge(String status) {
-    Color bgColor;
-    Color textColor;
-    String text;
-
-    // Logika barev podle statusu
-    switch (status.toLowerCase()) {
-      case 'pending':
-        bgColor = Colors.orange.withOpacity(0.2);
-        textColor = Colors.orange[900]!;
-        text = 'Čeká na schválení';
-        break;
-      case 'approved':
-      case 'active':
-        bgColor = Colors.green.withOpacity(0.2);
-        textColor = Colors.green[800]!;
-        text = 'Schváleno';
-        break;
-      case 'rejected':
-      case 'cancelled':
-        bgColor = Colors.red.withOpacity(0.2);
-        textColor = Colors.red[800]!;
-        text = 'Zamítnuto';
-        break;
-      default:
-        bgColor = Colors.grey.withOpacity(0.2);
-        textColor = Colors.grey[800]!;
-        text = status; // Fallback
-    }
+  Widget _buildModernEventCard(Event event) {
+    final statusColor = _getStatusColor(event.status);
+    final statusText = _getStatusText(event.status);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: textColor.withOpacity(0.3)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: textColor,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              // Barevný proužek vlevo (Indikátor statusu)
+              Container(width: 6, color: statusColor),
+
+              // Obsah karty
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Horní řádek: Status a Datum
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: statusColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              statusText,
+                              style: TextStyle(
+                                color: statusColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            _formatDateSimple(event.happenTime),
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Titulek
+                      Text(
+                        event.title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      // Popis
+                      Text(
+                        event.description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // Jednoduché formátování data (nebo použijte balíček intl)
-  String _formatDate(DateTime date) {
-    // Převedeme na lokální čas, protože API vrací 'Z' (UTC)
+  // --- Pomocné metody pro barvy a texty ---
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return Colors.orange;
+      case 'approved':
+      case 'active':
+        return Colors.green;
+      case 'rejected':
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getStatusText(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'ČEKÁ NA SCHVÁLENÍ';
+      case 'approved':
+      case 'active':
+        return 'AKTIVNÍ';
+      case 'rejected':
+      case 'cancelled':
+        return 'ZAMÍTNUTO';
+      default:
+        return status.toUpperCase();
+    }
+  }
+
+  String _formatDateSimple(DateTime date) {
     final local = date.toLocal();
-    // Formát: 12.12.2025 12:01
-    return "${local.day}.${local.month}.${local.year} ${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}";
+    // Jednoduchý formát: 12.12. • 14:00
+    return "${local.day}.${local.month}. • ${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}";
   }
 }

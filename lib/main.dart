@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:srumec_app/auth/providers/auth_provider.dart';
 import 'package:srumec_app/auth/screens/login_screen.dart';
@@ -117,13 +118,62 @@ class SrumecApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 1. Definujeme si naši "značkovou" fialovou
+    // Tahle barva (Deep Purple A700) je dost sytá na to, aby byla vidět na bílé,
+    // ale stále působí velmi "elektricky".
+    const Color vibrantPurple = Color(0xFF6200EA);
+
     return MaterialApp(
       title: 'Šrumec',
+
+      // Vynutíme pouze světlý režim
+      themeMode: ThemeMode.light,
+
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
         useMaterial3: true,
+
+        // Nastavení barevného schématu
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: vibrantPurple,
+          brightness:
+              Brightness.light, // Důležité: říkáme, že chceme světlou paletu
+          primary: vibrantPurple,
+          // Secondary použijeme pro extra zvýraznění (např. floating button)
+          secondary: const Color(0xFFD500F9),
+        ),
+
+        // Pozadí aplikace - čistě bílá pro maximální kontrast s fialovou
+        scaffoldBackgroundColor: Colors.white,
+
+        // Nastavení písma (Montserrat)
+        textTheme: GoogleFonts.montserratTextTheme(ThemeData.light().textTheme),
+
+        // Stylování AppBaru (Horni lišty)
+        appBarTheme: AppBarTheme(
+          backgroundColor: vibrantPurple, // Fialová lišta
+          foregroundColor: Colors.white, // Bílý text a ikony na liště
+          centerTitle: true,
+          elevation: 0,
+          titleTextStyle: GoogleFonts.montserrat(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+
+        // Globální styl tlačítek - aby byla vždy fialová
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: vibrantPurple, // Fialové pozadí tlačítka
+            foregroundColor: Colors.white, // Bílý text
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12), // Moderní zaoblení
+            ),
+          ),
+        ),
       ),
+
       debugShowCheckedModeBanner: false,
       home: const AuthWrapper(),
     );
