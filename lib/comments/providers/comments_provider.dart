@@ -38,11 +38,10 @@ class CommentsProvider extends ChangeNotifier {
   Future<bool> sendComment(String eventId, String content) async {
     try {
       // 1. NAČTENÍ ID UŽIVATELE Z LOCAL STORAGE
-      // (Ujisti se, že při loginu ukládáš ID pod klíčem 'userId')
       final userId = await _storage.read(key: 'user_uuid');
 
       if (userId == null) {
-        debugPrint("❌ Chyba: UserId nenalezeno v úložišti.");
+        debugPrint("Chyba: UserId nenalezeno v úložišti.");
         return false;
       }
 

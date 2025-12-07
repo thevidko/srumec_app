@@ -43,8 +43,7 @@ class LocationProvider with ChangeNotifier {
 
       // 3. Vše je OK, získáme polohu
       _currentPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy:
-            LocationAccuracy.high, // Přesnost (High žere víc baterie)
+        desiredAccuracy: LocationAccuracy.high,
       );
     } catch (e) {
       _errorMessage = e.toString();

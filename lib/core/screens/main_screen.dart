@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:srumec_app/chat/screens/chat_list_screen.dart';
-import 'package:srumec_app/controller/map_view_controller.dart';
+import 'package:srumec_app/core/controller/map_view_controller.dart';
 import 'package:srumec_app/core/providers/locator/location_provider.dart';
 import 'package:srumec_app/events/data/repositories/event_repository.dart';
 import 'package:srumec_app/events/screens/events_screen.dart';
 import 'package:srumec_app/events/screens/my_events_screen.dart';
-import 'package:srumec_app/events/services/events_service.dart';
 import 'package:srumec_app/events/models/event.dart';
-import 'package:srumec_app/screens/map/map_screen.dart';
-import 'package:srumec_app/screens/profile_screen.dart';
+import 'package:srumec_app/core/screens/map/map_screen.dart';
+import 'package:srumec_app/core/screens/profile_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -22,17 +21,12 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = -1; // -1 = mapa
   final MapViewController _mapController = MapViewController();
 
-  // Poznámka: EventsService se zdá nepoužitý, pokud používáš repository provider,
-  // ale nechávám ho, aby se nerozbil build.
-  final EventsService _eventsService = EventsService();
-
   List<Event> _events = [];
   bool _isLoadingEvents = false;
   String? _eventsError;
 
   // BARVY
   static const Color vibrantPurple = Color(0xFF6200EA);
-  // Opravená neonová barva (aby byla odlišná od vibrantPurple)
   static const Color neonAccent = Color(0xFF6200EA);
 
   @override
@@ -174,14 +168,12 @@ class _MainScreenState extends State<MainScreen> {
 
       // TĚLO APLIKACE
       body: isMap
-          ? _buildMapWithFloatingHeader(
-              locProvider,
-            ) // Speciální layout pro mapu
-          : _buildSectionBody(), // Klasický layout pro ostatní taby
+          ? _buildMapWithFloatingHeader(locProvider)
+          : _buildSectionBody(),
 
       extendBody: true,
 
-      // FLOATING ACTION BUTTON (Středové tlačítko)
+      // FLOATING ACTION BUTTON
       floatingActionButton: FloatingActionButton(
         onPressed: () => _onItemTapped(-1),
         backgroundColor: neonAccent,
@@ -204,7 +196,11 @@ class _MainScreenState extends State<MainScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: <Widget>[
               _buildNavIcon(icon: Icons.list_alt, index: 0, label: 'Akce'),
-              _buildNavIcon(icon: Icons.person, index: 1, label: 'Moje akce'),
+              _buildNavIcon(
+                icon: Icons.bookmark_border,
+                index: 1,
+                label: 'Moje akce',
+              ),
               const SizedBox(width: 48),
               _buildNavIcon(
                 icon: Icons.chat_bubble_outline,
@@ -223,11 +219,10 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // --- NOVÝ WIDGET: Mapa s plovoucí hlavičkou ---
   Widget _buildMapWithFloatingHeader(LocationProvider locProvider) {
     return Stack(
       children: [
-        // 1. Vrstva: MAPA (přes celou obrazovku, i pod status barem)
+        //MAPA
         MapScreen(
           controller: _mapController,
           events: _events,
@@ -235,7 +230,7 @@ class _MainScreenState extends State<MainScreen> {
           isLoading: locProvider.isLoading,
         ),
 
-        // 2. Vrstva: PLOVOUCÍ HLAVIČKA (Search Bar Style)
+        //PLOVOUCÍ HLAVIČKA
         Positioned(
           top: 0,
           left: 0,
@@ -244,10 +239,10 @@ class _MainScreenState extends State<MainScreen> {
             // Aby to nezasahovalo do hodin/baterie
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              height: 56, // Standardní výška
+              height: 56,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(30), // Hodně zaoblené
+                borderRadius: BorderRadius.circular(30),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.1),
@@ -270,7 +265,7 @@ class _MainScreenState extends State<MainScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
                       children: [
-                        // Ikonka lupy (fialová)
+                        // Ikonka lupy
                         const Icon(Icons.search, color: vibrantPurple),
                         const SizedBox(width: 12),
 
@@ -299,7 +294,6 @@ class _MainScreenState extends State<MainScreen> {
                           ),
                         ),
 
-                        // Oddělovač
                         Container(
                           width: 1,
                           height: 24,
@@ -319,7 +313,7 @@ class _MainScreenState extends State<MainScreen> {
                           },
                         ),
 
-                        // Tlačítko Refresh (pokud je potřeba)
+                        // Tlačítko Refresh
                         if (_isLoadingEvents)
                           const Padding(
                             padding: EdgeInsets.all(8.0),

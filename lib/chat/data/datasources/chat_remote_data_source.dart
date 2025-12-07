@@ -9,12 +9,11 @@ class ChatRemoteDataSource {
 
   ChatRemoteDataSource(this.dio);
 
-  // 1. Získat všechny moje místnosti
+  //Získat všechny moje místnosti
   Future<List<ChatRoom>> getMyRooms() async {
     final url = '${ApiEndpoints.baseUrl}${ChatEndpoints.getAllMyDirectRooms}';
 
     try {
-      // Předpokládám POST (protože get-my-events byl POST)
       final response = await dio.post(url, data: {});
       final List<dynamic> data = response.data;
       return data.map((json) => ChatRoom.fromJson(json)).toList();
@@ -24,16 +23,14 @@ class ChatRemoteDataSource {
     }
   }
 
-  // 2. Vytvořit novou místnost (nebo získat existující)
-  Future<ChatRoom> createRoom(String targetUserId) async {
+  //Vytvořit novou místnost (nebo získat existující)
+  Future<ChatRoom> createRoom(String myUserId, String targetUserId) async {
     final url = '${ApiEndpoints.baseUrl}${ChatEndpoints.createDirectRoom}';
 
     try {
       final response = await dio.post(
         url,
-        data: {
-          'target_user_ref': targetUserId, // Klíč záleží na BE
-        },
+        data: {'user_1_ref': myUserId, 'user_2_ref': targetUserId},
       );
       return ChatRoom.fromJson(response.data);
     } catch (e) {
@@ -42,7 +39,7 @@ class ChatRemoteDataSource {
     }
   }
 
-  // 3. Načíst zprávy pro konkrétní místnost
+  //Načíst zprávy pro konkrétní místnost
   Future<List<ChatMessage>> getMessages(String roomId) async {
     final url = '${ApiEndpoints.baseUrl}${ChatEndpoints.getAllMessages}';
 
@@ -56,7 +53,7 @@ class ChatRemoteDataSource {
     }
   }
 
-  // 4. Odeslat zprávu (REST fallback, pokud nepošleme přes Socket)
+  //Odeslat zprávu
   Future<ChatMessage> sendMessage(
     String roomId,
     String content,

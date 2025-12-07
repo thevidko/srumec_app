@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:srumec_app/core/utils/app_utils.dart';
 import 'package:srumec_app/events/data/repositories/event_repository.dart';
 import 'package:srumec_app/events/screens/create_event_screen.dart';
 import 'package:srumec_app/events/models/event.dart';
@@ -12,7 +13,6 @@ class MyEventsScreen extends StatefulWidget {
 }
 
 class _MyEventsScreenState extends State<MyEventsScreen> {
-  // Naše brand barvy
   static const Color vibrantPurple = Color(0xFF6200EA);
   static const Color neonAccent = Color(0xFFD500F9);
 
@@ -61,7 +61,6 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Jemně šedé pozadí, aby bílé karty vynikly
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F7),
       body: Column(
@@ -94,7 +93,6 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Gradientní tlačítko pro vytvoření
           Container(
             width: double.infinity,
             height: 52,
@@ -222,8 +220,8 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
   }
 
   Widget _buildModernEventCard(Event event) {
-    final statusColor = _getStatusColor(event.status);
-    final statusText = _getStatusText(event.status);
+    final statusColor = AppUtils.getStatusColor(event.status);
+    final statusText = AppUtils.getStatusText(event.status);
 
     return Container(
       decoration: BoxDecoration(
@@ -242,7 +240,6 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
         child: IntrinsicHeight(
           child: Row(
             children: [
-              // Barevný proužek vlevo (Indikátor statusu)
               Container(width: 6, color: statusColor),
 
               // Obsah karty
@@ -276,7 +273,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                             ),
                           ),
                           Text(
-                            _formatDateSimple(event.happenTime),
+                            AppUtils.formatDateSimple(event.happenTime),
                             style: TextStyle(
                               color: Colors.grey[500],
                               fontSize: 12,
@@ -320,43 +317,5 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
         ),
       ),
     );
-  }
-
-  // --- Pomocné metody pro barvy a texty ---
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return Colors.orange;
-      case 'approved':
-      case 'active':
-        return Colors.green;
-      case 'rejected':
-      case 'cancelled':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  String _getStatusText(String status) {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return 'ČEKÁ NA SCHVÁLENÍ';
-      case 'approved':
-      case 'active':
-        return 'AKTIVNÍ';
-      case 'rejected':
-      case 'cancelled':
-        return 'ZAMÍTNUTO';
-      default:
-        return status.toUpperCase();
-    }
-  }
-
-  String _formatDateSimple(DateTime date) {
-    final local = date.toLocal();
-    // Jednoduchý formát: 12.12. • 14:00
-    return "${local.day}.${local.month}. • ${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}";
   }
 }

@@ -11,8 +11,6 @@ class UsersRemoteDataSource {
   Future<UserProfile> getUserProfile(String userId) async {
     final url = '${ApiEndpoints.baseUrl}${UserEndpoints.base}$userId';
 
-    debugPrint("🔍 Stahuji profil uživatele: $url");
-
     try {
       final response = await dio.get(url);
       return UserProfile.fromJson(response.data);

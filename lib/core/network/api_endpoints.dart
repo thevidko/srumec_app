@@ -1,7 +1,7 @@
 class ApiEndpoints {
   //IP
   static String get _host {
-    //return 'http://172.20.10.3';
+    //return 'http://192.168.10.54';
 
     return 'http://10.0.2.2';
   }
@@ -13,7 +13,7 @@ class ApiEndpoints {
 }
 
 // Events - ENDPOINTS
-class Events {
+class EventsEndpoints {
   static const String getAll = '/v1/events/get-nearby';
   static const String getOne = '/v1/events/get-one';
   static const String getMy = '/v1/events/get-my-events';
@@ -22,7 +22,7 @@ class Events {
   static const String update = '/v1/events/delete-one';
 }
 
-class Auth {
+class AuthEndpoints {
   static const String login = '/auth/login';
 }
 
@@ -38,7 +38,6 @@ class CommentsEndpoints {
 class ChatEndpoints {
   //Direct rooms
   static const String createDirectRoom = '/v1/chats/direct/create-one';
-  //Výpis všech chatů, kde je uživatel podle JWT účastníkem.
   static const String getAllMyDirectRooms = '/v1/chats/direct/get-all';
 
   //Group roomy asi řešit nebudeme zatím.

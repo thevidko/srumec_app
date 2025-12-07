@@ -3,12 +3,10 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_popup/flutter_map_marker_popup.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:srumec_app/controller/map_view_controller.dart';
+import 'package:srumec_app/core/controller/map_view_controller.dart';
 import 'package:srumec_app/events/screens/event_detail_screen.dart';
 import 'package:srumec_app/events/models/event.dart';
-
 import 'widgets/event_popup_bubble.dart';
-// import 'widgets/map_markers.dart'; // Už nepotřebujeme, definujeme styl přímo zde
 
 class MapScreen extends StatefulWidget {
   const MapScreen({
@@ -34,7 +32,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   Event? _selected;
   bool _isLocked = false;
 
-  // Definice našich barev (stejné jako v MainScreen)
   static const Color vibrantPurple = Color(0xFF6200EA);
   static const Color neonAccent = Color(0xFFD500F9);
 
@@ -58,21 +55,20 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     // 1. Markery pro AKCE
     List<Marker> markers = widget.events.map((event) {
       return Marker(
-        width: 45, // Šířka ikony
-        height: 45, // Výška ikony
+        width: 45,
+        height: 45,
         point: LatLng(event.lat, event.lng),
         // Alignment: Default je střed. U špendlíku chceme, aby "špička"
         // ukazovala na místo. Proto posuneme těžiště trochu nahoru.
         alignment: Alignment.topCenter,
         child: GestureDetector(
           onTap: () => _lockOn(event),
-          // Zde voláme novou zjednodušenou metodu
           child: _buildCustomPin(vibrantPurple),
         ),
       );
     }).toList();
 
-    // 2. Marker pro UŽIVATELE (ten necháme v kroužku, aby se odlišil)
+    // 2. Marker pro UŽIVATELE
     if (widget.userLocation != null) {
       markers.add(
         Marker(
@@ -84,13 +80,13 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           ),
           child: Container(
             decoration: BoxDecoration(
-              color: neonAccent, // Neonová tečka
+              color: neonAccent,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2.5), // Bílý lem
+              border: Border.all(color: Colors.white, width: 2.5),
               boxShadow: [
                 BoxShadow(
                   blurRadius: 8,
-                  color: neonAccent.withOpacity(0.5), // Záře
+                  color: neonAccent.withOpacity(0.5),
                   spreadRadius: 2,
                 ),
               ],
@@ -106,13 +102,11 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     });
   }
 
-  // UPRAVENÁ METODA: Pouze čistá ikona bez kolečka okolo
   Widget _buildCustomPin(Color color) {
     return Icon(
-      Icons.location_on, // Klasický špendlík
+      Icons.location_on,
       color: color,
       size: 45,
-      // Přidáme stín přímo ikoně, aby se neslévala s mapou
       shadows: const [
         Shadow(offset: Offset(0, 2), blurRadius: 6.0, color: Colors.black38),
       ],
@@ -149,7 +143,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     if (widget.userLocation != null) {
       _mapController.move(
         LatLng(widget.userLocation!.latitude, widget.userLocation!.longitude),
-        15.0, // Přiblížíme trochu víc
+        15.0,
       );
     } else {
       ScaffoldMessenger.of(
@@ -231,7 +225,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           ),
           children: [
             TileLayer(
-              // Ponecháváme light verzi, k fialové ladí nejlépe
               urlTemplate:
                   'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png',
               subdomains: const ['a', 'b', 'c'],
@@ -246,8 +239,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   builder: (context, marker) {
                     final e = _findEventForMarker(marker);
                     if (e == null) return const SizedBox.shrink();
-                    // Zde by ideálně měla být také úprava stylu EventPopupBubble,
-                    // ale to je v jiném souboru.
                     return EventPopupBubble(
                       title: e.title,
                       subtitle: e.description,
@@ -277,10 +268,9 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
           bottom: 100,
           child: FloatingActionButton.small(
             heroTag: "btn_my_location",
-            backgroundColor: Colors.white, // Bílé pozadí
+            backgroundColor: Colors.white,
             elevation: 4,
             onPressed: _centerOnUser,
-            // Ikonka fialová, aby ladila
             child: Icon(
               Icons.my_location,
               color: widget.userLocation != null ? vibrantPurple : Colors.grey,
@@ -302,7 +292,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                 ),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.95),
-                  borderRadius: BorderRadius.circular(25), // Více kulaté
+                  borderRadius: BorderRadius.circular(25),
                   boxShadow: const [
                     BoxShadow(
                       color: Colors.black12,
@@ -319,7 +309,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        color: vibrantPurple, // Fialové načítání
+                        color: vibrantPurple,
                       ),
                     ),
                     SizedBox(width: 12),
@@ -327,7 +317,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                       "Zpřesňuji polohu...",
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight: FontWeight.w600, // Tučnější font
+                        fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),
                     ),

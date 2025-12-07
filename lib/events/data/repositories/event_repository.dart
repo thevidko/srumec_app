@@ -10,7 +10,7 @@ class EventsRepository {
   Future<List<Event>> getNearbyEvents({
     required double lat,
     required double lng,
-    int radius = 5000, // Defaultní hodnota
+    int radius = 5000, //TODO SETTING VALUE?
   }) async {
     try {
       return await remoteDataSource.getNearbyEvents(
@@ -19,7 +19,7 @@ class EventsRepository {
         radius: radius,
       );
     } catch (e) {
-      print("Chyba v repo: $e");
+      debugPrint("Chyba v repo: $e");
       return [];
     }
   }
@@ -40,7 +40,6 @@ class EventsRepository {
         "description": description,
         "latitude": latitude,
         "longitude": longitude,
-        // ISO 8601 string
         "happen_time": happenTime.toUtc().toIso8601String(),
       };
 

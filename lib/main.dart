@@ -14,7 +14,7 @@ import 'package:srumec_app/core/network/dio_client.dart';
 import 'package:srumec_app/core/providers/locator/location_provider.dart';
 import 'package:srumec_app/events/data/datasources/events_remote_data_source.dart';
 import 'package:srumec_app/events/data/repositories/event_repository.dart';
-import 'package:srumec_app/screens/main_screen.dart';
+import 'package:srumec_app/core/screens/main_screen.dart';
 import 'package:srumec_app/users/data/datasources/users_remote_data_source.dart';
 import 'package:srumec_app/users/data/repositories/users_repository.dart';
 import 'package:srumec_app/users/providers/users_providers.dart';
@@ -76,7 +76,7 @@ void main() {
           update: (_, ds, __) => UsersRepository(ds),
         ),
 
-        // 3. Users Provider (Vložte do té DRUHÉ vrstvy 'child' MultiProvideru, tam kde je ChatProvider)
+        // 3. Users Provider
         ChangeNotifierProxyProvider<UsersRepository, UsersProvider>(
           create: (context) => UsersProvider(context.read<UsersRepository>()),
           update: (_, repo, __) => UsersProvider(repo),
@@ -93,8 +93,6 @@ void main() {
           ),
 
           // Chat Provider
-          // TEĎ UŽ BUDE FUNGOVAT context.read<ChatRepository>(),
-          // protože je "pod" první vrstvou.
           ChangeNotifierProxyProvider2<
             ChatRepository,
             WebSocketService,
@@ -118,15 +116,12 @@ class SrumecApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Definujeme si naši "značkovou" fialovou
-    // Tahle barva (Deep Purple A700) je dost sytá na to, aby byla vidět na bílé,
-    // ale stále působí velmi "elektricky".
     const Color vibrantPurple = Color(0xFF6200EA);
 
     return MaterialApp(
       title: 'Šrumec',
 
-      // Vynutíme pouze světlý režim
+      // pouze světlý režim
       themeMode: ThemeMode.light,
 
       theme: ThemeData(
@@ -135,23 +130,21 @@ class SrumecApp extends StatelessWidget {
         // Nastavení barevného schématu
         colorScheme: ColorScheme.fromSeed(
           seedColor: vibrantPurple,
-          brightness:
-              Brightness.light, // Důležité: říkáme, že chceme světlou paletu
+          brightness: Brightness.light,
           primary: vibrantPurple,
-          // Secondary použijeme pro extra zvýraznění (např. floating button)
           secondary: const Color(0xFFD500F9),
         ),
 
-        // Pozadí aplikace - čistě bílá pro maximální kontrast s fialovou
+        // Pozadí aplikace
         scaffoldBackgroundColor: Colors.white,
 
-        // Nastavení písma (Montserrat)
+        // Nastavení písma
         textTheme: GoogleFonts.montserratTextTheme(ThemeData.light().textTheme),
 
-        // Stylování AppBaru (Horni lišty)
+        // Stylování AppBaru
         appBarTheme: AppBarTheme(
-          backgroundColor: vibrantPurple, // Fialová lišta
-          foregroundColor: Colors.white, // Bílý text a ikony na liště
+          backgroundColor: vibrantPurple,
+          foregroundColor: Colors.white,
           centerTitle: true,
           elevation: 0,
           titleTextStyle: GoogleFonts.montserrat(
@@ -161,14 +154,13 @@ class SrumecApp extends StatelessWidget {
           ),
         ),
 
-        // Globální styl tlačítek - aby byla vždy fialová
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: vibrantPurple, // Fialové pozadí tlačítka
-            foregroundColor: Colors.white, // Bílý text
+            backgroundColor: vibrantPurple,
+            foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12), // Moderní zaoblení
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
         ),

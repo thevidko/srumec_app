@@ -16,7 +16,6 @@ class CreateEventScreen extends StatefulWidget {
 class _CreateEventScreenState extends State<CreateEventScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Definice naší barvy
   static const Color vibrantPurple = Color(0xFF6200EA);
 
   // Controllers
@@ -46,7 +45,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       initialDate: now,
       firstDate: now,
       lastDate: DateTime(2100),
-      // Aby kalendář ladil taky do fialova
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -271,7 +269,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               ),
               const SizedBox(height: 20),
 
-              // DATUM A ČAS (Row)
+              // DATUM A ČAS
               Row(
                 children: [
                   Expanded(
@@ -335,7 +333,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               ),
               const SizedBox(height: 10),
 
-              // Tlačítka pro výběr - OPRAVA STYLU
+              // Tlačítka pro výběr
               Row(
                 children: [
                   Expanded(
@@ -344,11 +342,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                       icon: const Icon(Icons.my_location),
                       label: const Text("Moje poloha"),
                       style: ElevatedButton.styleFrom(
-                        // Světlounce fialové pozadí
                         backgroundColor: vibrantPurple.withOpacity(0.1),
-                        // Sytě fialový text/ikona
                         foregroundColor: vibrantPurple,
-                        elevation: 0, // Bez stínu (vypadá to čistěji)
+                        elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -363,7 +359,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                       icon: const Icon(Icons.map_outlined),
                       label: const Text("Vybrat z mapy"),
                       style: ElevatedButton.styleFrom(
-                        // Stejný styl pro konzistenci
                         backgroundColor: vibrantPurple.withOpacity(0.1),
                         foregroundColor: vibrantPurple,
                         elevation: 0,
@@ -382,7 +377,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
               FilledButton(
                 onPressed: _isLoading ? null : _submitForm,
                 style: FilledButton.styleFrom(
-                  backgroundColor: vibrantPurple, // Hlavní barva
+                  backgroundColor: vibrantPurple,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

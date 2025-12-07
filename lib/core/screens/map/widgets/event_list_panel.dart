@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../events/models/event.dart';
+import '../../../../events/models/event.dart';
 
 class EventListPanel extends StatelessWidget {
   final List<Event> events;

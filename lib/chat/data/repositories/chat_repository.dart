@@ -11,8 +11,8 @@ class ChatRepository {
     return await remoteDataSource.getMyRooms();
   }
 
-  Future<ChatRoom> initiateChat(String targetUserId) async {
-    return await remoteDataSource.createRoom(targetUserId);
+  Future<ChatRoom> initiateChat(String myUserId, String targetUserId) async {
+    return await remoteDataSource.createRoom(myUserId, targetUserId);
   }
 
   Future<List<ChatMessage>> fetchHistory(String roomId) async {

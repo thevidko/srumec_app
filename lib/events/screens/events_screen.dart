@@ -12,35 +12,93 @@ class EventsScreen extends StatelessWidget {
   final List<Event> events;
   final void Function(Event) onShowOnMap;
 
-  // Naše barvy (aby nemusely být importovány odevšad)
   static const Color vibrantPurple = Color(0xFF6200EA);
   static const Color cardBackground = Colors.white;
 
   @override
   Widget build(BuildContext context) {
-    // Výpočet paddingu pro spodní část, aby seznam nezalezl pod FAB a BottomBar
     final bottomSafe = MediaQuery.of(context).padding.bottom;
     const bottomBar = kBottomNavigationBarHeight;
     const extraForFab = 80.0; // Větší prostor kvůli FABu
 
+    //Seřazení podle datumu
+    final sortedEvents = List<Event>.from(events);
+    sortedEvents.sort((a, b) => a.happenTime.compareTo(b.happenTime));
+
     return Scaffold(
-      backgroundColor: const Color(
-        0xFFF5F5F7,
-      ), // Jemně šedé pozadí pod seznamem
-      body: ListView.separated(
-        padding: EdgeInsets.only(
-          top: 16,
-          left: 16,
-          right: 16,
-          bottom: bottomSafe + bottomBar + extraForFab,
-        ),
-        itemCount: events.length,
-        separatorBuilder: (_, __) =>
-            const SizedBox(height: 12), // Mezera místo čáry
-        itemBuilder: (context, i) {
-          final e = events[i];
-          return _buildEventCard(context, e);
-        },
+      backgroundColor: const Color(0xFFF5F5F7),
+      body: Column(
+        children: [
+          // 2. FILTRAČNÍ LIŠTA
+          _buildFilterBar(context, sortedEvents.length),
+
+          // 3. SEZNAM
+          Expanded(
+            child: ListView.separated(
+              padding: EdgeInsets.only(
+                top: 8, // Menší padding nahoře, protože tam je lišta
+                left: 16,
+                right: 16,
+                bottom: bottomSafe + bottomBar + extraForFab,
+              ),
+              itemCount: sortedEvents.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, i) {
+                final e = sortedEvents[i];
+                return _buildEventCard(context, e);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterBar(BuildContext context, int count) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      color: const Color(0xFFF5F5F7),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Informace o počtu
+          Text(
+            "$count akcí v okolí",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
+          ),
+
+          // Tlačítko Filtru
+          SizedBox(
+            height: 36,
+            child: FilledButton.icon(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Filtrace - Coming Soon")),
+                );
+                // TODO: Otevřít BottomSheet s filtry (datum, kategorie...)
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black87,
+                elevation: 0,
+                side: BorderSide(color: Colors.grey.shade300),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+              icon: const Icon(Icons.tune_rounded, size: 16), // Ikonka filtrů
+              label: const Text(
+                "Filtrovat",
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -63,7 +121,6 @@ class EventsScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          // ⬇️ KLIKNUTÍ NA CELOU KARTU -> DETAIL
           onTap: () {
             Navigator.push(
               context,
@@ -145,16 +202,12 @@ class EventsScreen extends StatelessWidget {
                 const SizedBox(width: 8),
 
                 // 3. PRAVÁ ČÁST - TLAČÍTKO MAPY
-                // Oddělené vizuálně čarou
                 Container(height: 40, width: 1, color: Colors.grey[200]),
                 IconButton(
                   tooltip: 'Ukázat na mapě',
                   icon: const Icon(Icons.map_outlined),
-                  color: Colors.grey[400], // Defaultně šedá
+                  color: Colors.grey[400],
                   selectedIcon: const Icon(Icons.map),
-                  // Při stisknutí nebo hoveru by to mohlo zfialovět,
-                  // ale Material 3 IconButton to řeší stylem.
-                  // Zde uděláme custom styl, pokud chceme:
                   style: IconButton.styleFrom(
                     foregroundColor: vibrantPurple,
                     hoverColor: vibrantPurple.withOpacity(0.05),
@@ -169,13 +222,13 @@ class EventsScreen extends StatelessWidget {
     );
   }
 
-  // Stylový boxík pro datum (Den / Měsíc)
+  // Stylový boxík pro datum
   Widget _buildDateBox(DateTime date) {
     return Container(
       width: 55,
       height: 60,
       decoration: BoxDecoration(
-        color: vibrantPurple.withOpacity(0.08), // Velmi světlé fialové pozadí
+        color: vibrantPurple.withOpacity(0.08),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: vibrantPurple.withOpacity(0.1), width: 1),
       ),
@@ -186,7 +239,7 @@ class EventsScreen extends StatelessWidget {
             date.day.toString(),
             style: const TextStyle(
               fontSize: 20,
-              fontWeight: FontWeight.w800, // Extra tučné
+              fontWeight: FontWeight.w800,
               color: vibrantPurple,
               height: 1,
             ),
@@ -205,7 +258,6 @@ class EventsScreen extends StatelessWidget {
     );
   }
 
-  // Pomocné metody pro formátování (pokud nemáte balíček intl)
   String _formatTime(DateTime date) {
     final local = date.toLocal();
     return "${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}";

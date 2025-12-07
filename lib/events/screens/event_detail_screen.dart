@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:srumec_app/auth/providers/auth_provider.dart';
+import 'package:srumec_app/chat/data/repositories/chat_repository.dart';
+import 'package:srumec_app/chat/screens/chat_detail_screen.dart';
 import 'package:srumec_app/comments/widgets/comments_section.dart';
+import 'package:srumec_app/core/utils/app_utils.dart';
 import 'package:srumec_app/events/models/event.dart';
+import 'package:srumec_app/users/widgets/user_name_label.dart';
+import 'package:provider/provider.dart';
 
 class EventDetailScreen extends StatelessWidget {
   const EventDetailScreen({
@@ -12,7 +18,6 @@ class EventDetailScreen extends StatelessWidget {
   final Event event;
   final void Function(Event) onShowOnMap;
 
-  // Naše barvy
   static const Color vibrantPurple = Color(0xFF6200EA);
   static const Color neonAccent = Color(0xFFD500F9);
 
@@ -20,7 +25,6 @@ class EventDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      // AppBar uděláme průhlednější, aby vynikl obsah, nebo sytý pro konzistenci
       appBar: AppBar(
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
@@ -42,7 +46,6 @@ class EventDetailScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // SCROLLOVATELNÝ OBSAH
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
@@ -74,7 +77,7 @@ class EventDetailScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 15,
                         color: Colors.grey[700],
-                        height: 1.6, // Lepší řádkování pro čitelnost
+                        height: 1.6,
                       ),
                     ),
 
@@ -92,18 +95,14 @@ class EventDetailScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    // Zde předpokládáme, že CommentsSection není roztažený přes celou obrazovku
-                    // Pokud obsahuje ListView, měl by mít shrinkWrap: true a physics: NeverScrollableScrollPhysics
                     CommentsSection(eventId: event.id),
-
-                    // Prostor dole, aby obsah nebyl schovaný za tlačítkem
                     const SizedBox(height: 80),
                   ],
                 ),
               ),
             ),
 
-            // 5. SPODNÍ TLAČÍTKO (Sticky Bottom Bar)
+            // 5. SPODNÍ TLAČÍTKO
             _buildBottomAction(context),
           ],
         ),
@@ -128,7 +127,7 @@ class EventDetailScreen extends StatelessWidget {
               const Icon(Icons.calendar_today, size: 16, color: vibrantPurple),
               const SizedBox(width: 8),
               Text(
-                _formatDateTime(event.happenTime),
+                AppUtils.formatDateTime(event.happenTime),
                 style: const TextStyle(
                   color: vibrantPurple,
                   fontWeight: FontWeight.bold,
@@ -144,13 +143,13 @@ class EventDetailScreen extends StatelessWidget {
           event.title,
           style: const TextStyle(
             fontSize: 28,
-            fontWeight: FontWeight.w900, // Extra tučné
+            fontWeight: FontWeight.w900,
             color: Colors.black,
             height: 1.1,
           ),
         ),
         const SizedBox(height: 8),
-        // Místo (jen text, kliknutí na mapu je dole)
+        // Místo
         Row(
           children: [
             Icon(Icons.location_on, size: 18, color: Colors.grey[500]),
@@ -166,6 +165,8 @@ class EventDetailScreen extends StatelessWidget {
   }
 
   Widget _buildOrganizerSection(BuildContext context) {
+    final myUserId = context.read<AuthProvider>().userId;
+    final isMyEvent = myUserId == event.organizerRef;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -196,7 +197,7 @@ class EventDetailScreen extends StatelessWidget {
             ),
             child: const Center(
               child: Text(
-                "TN", // Iniciály (Tomáš Novotný)
+                "JD", // TODO Iniciály
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Colors.black54,
@@ -207,13 +208,16 @@ class EventDetailScreen extends StatelessWidget {
           const SizedBox(width: 12),
 
           // Jméno a role
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "Tomáš Novotný", // Placeholder jméno
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                UserNameLabel(
+                  userId: event.organizerRef,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
                 Text(
                   "Organizátor",
@@ -228,23 +232,57 @@ class EventDetailScreen extends StatelessWidget {
           ),
 
           // Tlačítko Zpráva
-          IconButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Otevírám chat s uživatelem...')),
-              );
-              // TODO: Navigace do chatu s tímto uživatelem
-            },
-            style: IconButton.styleFrom(
-              backgroundColor: vibrantPurple.withOpacity(0.1),
-              foregroundColor: vibrantPurple,
+          if (!isMyEvent)
+            IconButton(
+              onPressed: () => _handleMessagePress(context),
+              style: IconButton.styleFrom(
+                backgroundColor: vibrantPurple.withOpacity(0.1),
+                foregroundColor: vibrantPurple,
+              ),
+              icon: const Icon(Icons.chat_bubble_outline_rounded),
+              tooltip: "Napsat zprávu",
             ),
-            icon: const Icon(Icons.chat_bubble_outline_rounded),
-            tooltip: "Napsat zprávu",
-          ),
         ],
       ),
     );
+  }
+
+  Future<void> _handleMessagePress(BuildContext context) async {
+    final myUserId = context.read<AuthProvider>().userId;
+    try {
+      if (myUserId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Chyba: Nejste přihlášen (chybí ID).')),
+        );
+        return;
+      }
+      final chatRepo = context.read<ChatRepository>();
+
+      // initiateChat vrací objekt ChatRoom
+      final chatRoom = await chatRepo.initiateChat(
+        myUserId,
+        event.organizerRef,
+      );
+
+      if (context.mounted) {
+        // 2. Přesměrujeme na detail chatu
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChatDetailScreen(
+              roomId: chatRoom.id,
+              otherUserId: event.organizerRef,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Chyba při otevírání chatu: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildBottomAction(BuildContext context) {
@@ -290,12 +328,5 @@ class EventDetailScreen extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _formatDateTime(DateTime date) {
-    final local = date.toLocal();
-    // Příklad: Pátek, 12. prosince • 14:00
-    // Pro jednoduchost bez intl balíčku:
-    return "${local.day}.${local.month}.${local.year} • ${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}";
   }
 }

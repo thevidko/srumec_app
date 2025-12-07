@@ -17,7 +17,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final _authService = AuthService();
 
-  // Naše brand barvy
   static const Color vibrantPurple = Color(0xFF6200EA);
 
   bool _isLoading = false;
@@ -150,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
 
-                  // Zapomenuté heslo (volitelné, pro doplnění designu)
+                  // Zapomenuté heslo
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
@@ -243,7 +242,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Pomocná metoda pro konzistentní styl inputů
   InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
@@ -251,7 +249,7 @@ class _LoginScreenState extends State<LoginScreen> {
       labelStyle: const TextStyle(color: Colors.grey),
       floatingLabelStyle: const TextStyle(color: vibrantPurple),
       filled: true,
-      fillColor: Colors.grey[50], // Velmi světlé pozadí inputu
+      fillColor: Colors.grey[50],
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: Colors.grey.shade300),

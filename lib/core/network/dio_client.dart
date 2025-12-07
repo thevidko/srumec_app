@@ -19,29 +19,23 @@ class DioClient {
         onRequest: (options, handler) async {
           final token = await authProvider.getToken();
 
-          // --- DEBUG VÝPIS ---
-          print("🔍 AUTH DEBUG: Token z úložiště je: '$token'");
-          // -------------------
-
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
-            debugPrint(
-              "🚀 Odesílám Header: ${options.headers['Authorization']}",
-            );
+            debugPrint("Odesílám Header: ${options.headers['Authorization']}");
           } else {
-            debugPrint("⚠️ Odesílám request BEZ tokenu!");
+            debugPrint("Odesílám request BEZ tokenu!");
           }
           return handler.next(options);
         },
 
         // B) PŘI ODPOVĚDI (Chyba): Hlídat 401
         onError: (DioException e, handler) async {
-          debugPrint("❌ Dio Error Status: ${e.response?.statusCode}");
+          debugPrint("Dio Error Status: ${e.response?.statusCode}");
 
           if (e.response?.statusCode == 401) {
-            debugPrint("⚠️ Session vypršela (401). Odhlašuji uživatele...");
+            debugPrint("Session vypršela (401). Odhlašuji uživatele...");
 
-            // TOTO ZPŮSOBÍ PŘEPNUTÍ NA LOGIN SCREEN
+            //PŘEPNUTÍ NA LOGIN SCREEN
             await authProvider.logout();
           }
 

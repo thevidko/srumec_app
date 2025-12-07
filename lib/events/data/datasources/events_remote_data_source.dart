@@ -12,7 +12,7 @@ class EventsRemoteDataSource {
     required double longitude,
     required int radius,
   }) async {
-    final url = '${ApiEndpoints.eventsBaseUrl}${Events.getAll}';
+    final url = '${ApiEndpoints.eventsBaseUrl}${EventsEndpoints.getAll}';
 
     final body = {
       "latitude": latitude,
@@ -25,9 +25,6 @@ class EventsRemoteDataSource {
       final List<dynamic> data = response.data;
       return data.map((json) => Event.fromJson(json)).toList();
     } catch (e) {
-      // Zde už řešíme jen chyby sítě nebo parsování.
-      // 401 vyřešil Interceptor (a shodil aplikaci do loginu),
-      // takže sem se to sice dostane, ale UI se stejně přepne.
       debugPrint("Chyba při stahování eventů: $e");
       rethrow;
     }
@@ -35,15 +32,10 @@ class EventsRemoteDataSource {
 
   //CREATE EVENT
   Future<void> createEvent(Map<String, dynamic> body) async {
-    final url = '${ApiEndpoints.eventsBaseUrl}${Events.create}';
-
-    debugPrint("📤 Odesílám JSON body: $body");
-
+    final url = '${ApiEndpoints.eventsBaseUrl}${EventsEndpoints.create}';
     try {
-      // Body už je připravené, stačí ho poslat
       final response = await dio.post(url, data: body);
 
-      // Pokud server vrátí 200/201, považujeme to za úspěch
       if (response.statusCode == 200 || response.statusCode == 201) {
         return;
       } else {
@@ -54,20 +46,17 @@ class EventsRemoteDataSource {
         );
       }
     } on DioException catch (e) {
-      debugPrint(
-        "❌ Chyba vytvoření eventu (Status: ${e.response?.statusCode})",
-      );
-      debugPrint("📩 Odpověď serveru: ${e.response?.data}");
-      rethrow; // Pošleme chybu zpět do Repozitáře, kde ji chytáte do try-catch
+      debugPrint("Chyba vytvoření eventu (Status: ${e.response?.statusCode})");
+      debugPrint("Odpověď serveru: ${e.response?.data}");
+      rethrow;
     }
   }
 
   // GET MY EVENTS
   Future<List<Event>> getMyEvents() async {
-    final url = '${ApiEndpoints.eventsBaseUrl}${Events.getMy}';
+    final url = '${ApiEndpoints.eventsBaseUrl}${EventsEndpoints.getMy}';
     try {
-      debugPrint("🚀 Odesílám request na: $url");
-      debugPrint("🔑 Headers: ${dio.options.headers}");
+      debugPrint("Odesílám request na: $url");
       final response = await dio.post(url, data: {});
       final List<dynamic> data = response.data;
       return data.map((json) => Event.fromJson(json)).toList();

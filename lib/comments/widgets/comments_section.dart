@@ -83,9 +83,8 @@ class _CommentsSectionState extends State<CommentsSection> {
           )
         else
           ListView.separated(
-            shrinkWrap: true, // Důležité, protože jsme uvnitř jiného ListView
-            physics:
-                const NeverScrollableScrollPhysics(), // Scrolluje celý detail, ne jen komentáře
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
             itemCount: provider.comments.length,
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {

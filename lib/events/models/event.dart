@@ -6,6 +6,7 @@ class Event {
   final String description;
   final DateTime happenTime;
   final String status;
+  final String organizerRef;
   //TODO přidat happened time, user_id
   Event({
     required this.id,
@@ -15,6 +16,7 @@ class Event {
     required this.description,
     required this.happenTime,
     required this.status,
+    required this.organizerRef,
   });
 
   factory Event.fromJson(Map<String, dynamic> json) {
@@ -25,6 +27,7 @@ class Event {
       title: json['title'],
       description: json['description'],
       status: json['status'],
+      organizerRef: json['organizer_ref'],
       happenTime:
           DateTime.tryParse(json['happen_time'] ?? '') ?? DateTime.now(),
     );

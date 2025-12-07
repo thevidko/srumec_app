@@ -5,7 +5,7 @@ import 'package:srumec_app/core/network/api_endpoints.dart';
 
 class AuthService {
   Future<Map<String, dynamic>?> login(String email, String password) async {
-    final url = Uri.parse('${ApiEndpoints.baseUrl}${Auth.login}');
+    final url = Uri.parse('${ApiEndpoints.baseUrl}${AuthEndpoints.login}');
     try {
       final response = await http.post(
         url,

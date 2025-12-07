@@ -1,26 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:srumec_app/screens/settings_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:srumec_app/auth/providers/auth_provider.dart';
+import 'package:srumec_app/core/screens/settings_screen.dart';
+import 'package:srumec_app/users/providers/users_providers.dart';
+import 'package:srumec_app/users/widgets/user_name_label.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
-  // Naše brand barvy
   static const Color vibrantPurple = Color(0xFF6200EA);
 
   @override
   Widget build(BuildContext context) {
+    final myUserId = context.read<AuthProvider>().userId;
+    if (myUserId == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F7),
       body: SingleChildScrollView(
-        // ZMĚNA ZDE: Použijeme fromLTRB pro detailní kontrolu paddingu
-        // Bottom nastavíme na 100, aby se obsah dostal nad spodní lištu
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 120),
         child: Column(
           children: [
             const SizedBox(height: 20),
 
             // 1. HEADER PROFILU
-            _buildProfileHeader(context),
+            _buildProfileHeader(context, myUserId),
 
             const SizedBox(height: 24),
 
@@ -138,26 +143,22 @@ class ProfileScreen extends StatelessWidget {
                     textColor: Colors.red,
                     iconColor: Colors.red,
                     isLast: true,
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Odhlášení - placeholder'),
-                        ),
-                      );
+                    onTap: () async {
+                      await context.read<AuthProvider>().logout();
                     },
                   ),
                 ],
               ),
             ),
-
-            // Zde už není potřeba extra SizedBox, protože to řeší padding nahoře
           ],
         ),
       ),
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context) {
+  Widget _buildProfileHeader(BuildContext context, String myUserId) {
+    final usersProvider = context.watch<UsersProvider>();
+    final userProfile = usersProvider.getUser(myUserId);
     return Column(
       children: [
         // Avatar se stínem a ikonkou editace
@@ -202,21 +203,25 @@ class ProfileScreen extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         // Jméno
-        const Text(
-          'Jan Novák', // Placeholder
-          style: TextStyle(
+        UserNameLabel(
+          userId: myUserId,
+          style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
         ),
+
         const SizedBox(height: 4),
+
         // Email
         Text(
-          'jan.novak@example.com',
+          userProfile?.email ?? 'Načítám...',
           style: TextStyle(fontSize: 14, color: Colors.grey[600]),
         ),
+
         const SizedBox(height: 16),
+
         // Tlačítko Upravit profil
         OutlinedButton(
           onPressed: () {
@@ -255,7 +260,7 @@ class ProfileScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _buildStatItem("0", "Akcí"),
-          Container(height: 30, width: 1, color: Colors.grey[200]), // Oddělovač
+          Container(height: 30, width: 1, color: Colors.grey[200]),
           _buildStatItem("0", "Sleduji"),
           Container(height: 30, width: 1, color: Colors.grey[200]),
           _buildStatItem("0.0", "Rating"),

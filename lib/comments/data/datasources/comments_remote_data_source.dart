@@ -11,7 +11,6 @@ class CommentsRemoteDataSource {
   Future<List<Comment>> getComments(String eventId) async {
     final url = '${ApiEndpoints.baseUrl}${CommentsEndpoints.getByEvent}';
     try {
-      debugPrint("📤 Odesílám ID: $eventId");
       final response = await dio.post(url, data: {"event_ref": eventId});
       final List<dynamic> data = response.data;
       return data.map((json) => Comment.fromJson(json)).toList();
